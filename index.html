@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Offline POS Billing System with Barcode Scanner</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="dark">
+
+  <!-- ==================== DESKTOP FIXED SIDEBAR ==================== -->
+  <aside class="pos-sidebar">
+    <div>
+      <div class="sidebar-logo">
+        <div class="logo-icon">📦</div>
+        <div>
+          <div class="logo-text">POS Billing Pro</div>
+          <div style="font-size:10px; color:var(--text-muted);">v2.0 Premium POS</div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <div class="sidebar-nav-item active" data-view="billing" onclick="posApp.switchView('billing')">
+          <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          Billing
+        </div>
+
+        <div class="sidebar-nav-item" data-view="dashboard" onclick="posApp.switchView('dashboard')">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          Dashboard
+        </div>
+
+        <div class="sidebar-nav-item" data-view="products" onclick="posApp.switchView('products')">
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
+          Products
+        </div>
+
+        <div class="sidebar-nav-item" data-view="customers" onclick="posApp.switchView('customers')">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          Customers
+        </div>
+
+        <div class="sidebar-nav-item" data-view="inventory" onclick="posApp.switchView('inventory')">
+          <svg viewBox="0 0 24 24"><path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zM4 3h16c.55 0 1 .45 1 1v6c0 .55-.45 1-1 1H4c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1z"/></svg>
+          Inventory
+        </div>
+
+        <div class="sidebar-nav-item" data-view="reports" onclick="posApp.switchView('reports')">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2v-4h2v4zm4 0h-2v-10h2v10z"/></svg>
+          Reports
+        </div>
+
+        <div class="sidebar-nav-item" data-view="settings" onclick="posApp.switchView('settings')">
+          <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+          Settings
+        </div>
+      </nav>
+    </div>
+
+    <div style="font-size:11px; color:var(--text-muted); text-align:center; border-top:1px solid var(--border-color); padding-top:12px;">
+      Offline Ready 🟢
+    </div>
+  </aside>
+
+  <!-- ==================== MAIN WRAPPER ==================== -->
+  <div class="pos-main-wrapper">
+
+    <!-- TOP NAVIGATION BAR -->
+    <header class="pos-top-nav">
+      <div class="store-info-group">
+        <span class="store-badge" id="hdrStoreName">Offline Supermarket POS</span>
+        <span class="cashier-badge" id="hdrCashierName">Alex Cashier</span>
+        <span class="clock-display" id="hdrClock">00:00:00 AM</span>
+      </div>
+
+      <div class="top-nav-actions">
+        <button class="btn-pos btn-secondary" onclick="posApp.openCameraScanner()" style="padding:4px 10px; font-size:12px; gap:4px;">
+          📷 <span class="btn-text-desktop">Camera Scan</span>
+        </button>
+
+        <div class="status-badge" style="display:flex; align-items:center; gap:6px; background:var(--bg-input); border:1px solid var(--border-color); padding:4px 10px; border-radius:20px; font-size:11px;">
+          <span style="width:8px; height:8px; border-radius:50%; background:var(--accent-success);"></span>
+          <span id="dbProductCountBadge">Loading...</span>
+        </div>
+
+        <button class="icon-btn" onclick="posApp.seed100kProducts()" title="Seed 100,000 Sample Items" id="btnSeed100k" style="width:auto; padding:0 10px; font-size:12px; font-weight:700;">
+          ⚡ 100k Demo
+        </button>
+
+        <button class="icon-btn" onclick="posApp.openHeldBillsModal()" title="Recall Held Bills (F6)">
+          📋
+        </button>
+
+        <button class="icon-btn" onclick="posApp.toggleTheme()" title="Toggle Dark/Light Theme">
+          🌓
+        </button>
+      </div>
+    </header>
+
+    <!-- ==================== VIEW 1: BILLING WORKSPACE ==================== -->
+    <section class="view-section" id="view-billing" style="display:flex;">
+
+      <div class="scanner-banner" id="scannerBanner">
+        <div style="font-size:20px;">🔍</div>
+        <input type="text" id="barcodeInput" placeholder="Scan Barcode (USB / Bluetooth HID / Camera)..." autocomplete="off" autofocus>
+        <span class="barcode-format-tag" id="barcodeFormatTag">EAN-13 / CODE 128</span>
+        <button class="btn-pos btn-secondary" onclick="posApp.openCameraScanner()" style="padding:6px 12px; font-size:12px;">📷 Camera Scan</button>
+        <button class="btn-pos btn-primary" onclick="posApp.openSearchModal()" style="padding:6px 12px; font-size:12px;">Search [F2]</button>
+      </div>
+
+      <div class="workspace-grid">
+
+        <div class="cart-panel">
+          <div class="panel-header">
+            <div class="panel-title">
+              🛒 Active Bill
+              <span class="badge" id="cartItemCount">0 Items</span>
+            </div>
+            <button class="btn-pos btn-secondary" onclick="posApp.clearCart()" style="padding:4px 10px; font-size:12px; color:var(--accent-danger)">
+              Clear [Ctrl+N]
+            </button>
+          </div>
+
+          <div class="cart-table-wrapper">
+            <table class="cart-table">
+              <thead>
+                <tr>
+                  <th>Product Description</th>
+                  <th style="width: 120px;">Qty</th>
+                  <th class="num" style="width: 90px;">Price</th>
+                  <th class="num" style="width: 80px;">Disc %</th>
+                  <th class="num" style="width: 80px;">GST %</th>
+                  <th class="num" style="width: 100px;">Total</th>
+                  <th style="width: 45px; text-align:center;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="cartTableBody">
+                <!-- Injected dynamically -->
+              </tbody>
+            </table>
+
+            <div class="empty-cart-state" id="emptyCartState">
+              <div class="empty-icon">🏷️</div>
+              <div style="font-size:15px; font-weight:600;">Scan Barcode to Start Billing</div>
+              <div style="font-size:12px;">HID Hardware Scanner & Mobile Camera Supported</div>
+            </div>
+          </div>
+
+          <div class="mobile-cart-list" id="mobileCartContainer">
+            <!-- Mobile cards injected dynamically -->
+          </div>
+        </div>
+
+        <div class="summary-panel">
+          <div class="customer-selector" onclick="posApp.openCustomerModal()" title="Change Customer (F7)">
+            <div>
+              <div class="cust-name" id="selectedCustName">👤 Walk-in Customer</div>
+              <div class="cust-phone" id="selectedCustPhone">Standard Retail Sale</div>
+            </div>
+            <span style="font-size:12px; color:var(--accent-primary); font-weight:700;">Change [F7]</span>
+          </div>
+
+          <div class="summary-rows">
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span id="summarySubtotal" class="font-mono">₹0.00</span>
+            </div>
+            <div class="summary-row">
+              <span>Tax (GST)</span>
+              <span id="summaryTax" class="font-mono">₹0.00</span>
+            </div>
+            <div class="summary-row">
+              <span>Total Discount</span>
+              <span id="summaryDiscount" class="font-mono" style="color:var(--accent-danger)">₹0.00</span>
+            </div>
+
+            <div class="form-group" style="margin-top:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span class="form-label">Global Bill Discount % [F8]:</span>
+                <input type="number" id="globalDiscountInput" class="form-control" style="width:70px; text-align:center; padding:4px;" value="0" min="0" max="100" onchange="posApp.globalDiscountPercent = parseFloat(this.value)||0; posApp.saveState(); posApp.renderCart();">
+              </div>
+            </div>
+
+            <div class="summary-row total">
+              <span>Grand Total</span>
+              <span id="summaryGrandTotal">₹0.00</span>
+            </div>
+          </div>
+
+          <div class="action-buttons-grid">
+            <button class="btn-pos btn-secondary" onclick="posApp.holdCurrentBill()">
+              ⏸️ Hold [F6]
+            </button>
+            <button class="btn-pos btn-secondary" onclick="posApp.triggerPrintReceipt()">
+              🖨️ Print [Ctrl+P]
+            </button>
+            <button class="btn-pos btn-success" onclick="posApp.openPaymentModal()">
+              💳 PAY / CHECKOUT [F4]
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 2: DASHBOARD ==================== -->
+    <section class="view-section" id="view-dashboard" style="display:none;">
+      <h2>POS Dashboard Summary</h2>
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:16px; margin-top:12px;">
+        <div style="background:var(--bg-card); padding:20px; border-radius:var(--radius-md); border:1px solid var(--border-color)">
+          <div style="font-size:12px; color:var(--text-muted)">TOTAL REVENUE (RECENT)</div>
+          <div style="font-size:28px; font-weight:800; color:var(--accent-success)" id="dashTotalSales">₹0.00</div>
+        </div>
+        <div style="background:var(--bg-card); padding:20px; border-radius:var(--radius-md); border:1px solid var(--border-color)">
+          <div style="font-size:12px; color:var(--text-muted)">COMPLETED TRANSACTIONS</div>
+          <div style="font-size:28px; font-weight:800; color:var(--accent-primary)" id="dashTotalOrders">0</div>
+        </div>
+        <div style="background:var(--bg-card); padding:20px; border-radius:var(--radius-md); border:1px solid var(--border-color)">
+          <div style="font-size:12px; color:var(--text-muted)">TOTAL CATALOG PRODUCTS</div>
+          <div style="font-size:28px; font-weight:800; color:var(--accent-purple)" id="dashTotalProducts">0</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 3: PRODUCTS CATALOG ==================== -->
+    <section class="view-section" id="view-products" style="display:none;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Product Catalog Directory</h2>
+        <button class="btn-pos btn-primary" onclick="posApp.openQuickAddProductModal()">+ Add Product</button>
+      </div>
+      <div id="productsTableContainer" style="flex:1; overflow-y:auto; background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:12px;">
+        <!-- Injected dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 4: CUSTOMERS ==================== -->
+    <section class="view-section" id="view-customers" style="display:none;">
+      <h2>Customer Directory</h2>
+      <div id="customersListContainer" style="margin-top:12px;">
+        <!-- Injected dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 5: INVENTORY ==================== -->
+    <section class="view-section" id="view-inventory" style="display:none;">
+      <h2>Stock Inventory Audit</h2>
+      <div id="inventoryAuditContainer" style="flex:1; overflow-y:auto; background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:12px;">
+        <!-- Injected dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 6: REPORTS ==================== -->
+    <section class="view-section" id="view-reports" style="display:none;">
+      <h2>Sales & Invoice History Logs</h2>
+      <div id="reportsLogContainer" style="flex:1; overflow-y:auto; background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:12px;">
+        <!-- Injected dynamically -->
+      </div>
+    </section>
+
+    <!-- ==================== VIEW 7: SETTINGS & LOGO MANAGER ==================== -->
+    <section class="view-section" id="view-settings" style="display:none;">
+      <h2>POS Store Branding & Settings</h2>
+      <div style="background:var(--bg-card); border:1px solid var(--border-color); padding:20px; border-radius:var(--radius-md); max-width:650px; margin-top:12px; display:flex; flex-direction:column; gap:14px; max-height:80vh; overflow-y:auto;">
+
+        <!-- STORE LOGO MANAGER -->
+        <div class="form-group" style="background:var(--bg-input); padding:14px; border-radius:var(--radius-sm); border:1px solid var(--border-color)">
+          <label class="form-label" style="font-size:13px; color:var(--accent-primary);">🖼️ Upload Store Logo (PNG, JPG, SVG - Max 2MB)</label>
+          <div style="display:flex; gap:12px; align-items:center; margin-top:6px;">
+            <input type="file" id="logoFileInput" accept="image/png, image/jpeg, image/svg+xml" onchange="posApp.handleLogoUpload(event)" class="form-control">
+            <button class="btn-pos btn-secondary" onclick="posApp.removeStoreLogo()" style="color:var(--accent-danger)">Remove Logo</button>
+          </div>
+          <div id="logoPreviewContainer" style="margin-top:10px; display:none; align-items:center; gap:10px;">
+            <span class="form-label">Preview:</span>
+            <img id="logoPreviewImg" src="" alt="Store Logo Preview" style="max-height:60px; object-fit:contain; border:1px solid var(--border-color); padding:4px; background:#fff; border-radius:4px;">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Store / Business Name *</label>
+            <input type="text" id="setStoreName" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tagline (Optional)</label>
+            <input type="text" id="setTagline" class="form-control" placeholder="e.g. Your Trusted Supermarket">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Store Address</label>
+          <input type="text" id="setAddress" class="form-control" placeholder="123 Commercial St">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">City</label>
+            <input type="text" id="setCity" class="form-control" placeholder="Mumbai">
+          </div>
+          <div class="form-group">
+            <label class="form-label">State & PIN Code</label>
+            <input type="text" id="setStatePin" class="form-control" placeholder="Maharashtra - 400001">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Mobile Number</label>
+            <input type="text" id="setPhone" class="form-control" placeholder="+91 9876543210">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" id="setEmail" class="form-control" placeholder="billing@posstore.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">GST Number</label>
+            <input type="text" id="setGSTIN" class="form-control" placeholder="27AAAAA0000A1Z5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Website (Optional)</label>
+            <input type="text" id="setWebsite" class="form-control" placeholder="www.posstore.com">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Cashier Name</label>
+            <input type="text" id="setCashierName" class="form-control">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Default Paper Width</label>
+            <select id="setPaperWidth" class="form-control">
+              <option value="80mm">80mm Thermal Receipt</option>
+              <option value="58mm">58mm Thermal Receipt</option>
+              <option value="A4">A4 Full Page Invoice</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group" style="background:var(--bg-input); padding:14px; border-radius:var(--radius-sm); border:1px solid var(--border-color); margin-top:8px;">
+          <label class="form-label" style="font-size:13px; color:var(--accent-primary); font-weight:700;">📱 UPI Payment QR Settings</label>
+          <div class="form-row" style="margin-top:8px;">
+            <div class="form-group">
+              <label class="form-label">UPI ID *</label>
+              <input type="text" id="setUpiId" class="form-control" placeholder="abcstore@okaxis">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Merchant Name *</label>
+              <input type="text" id="setMerchantName" class="form-control" placeholder="ABC Super Market">
+            </div>
+          </div>
+          <div class="form-row" style="margin-top:8px;">
+            <div class="form-group">
+              <label class="form-label">Merchant City</label>
+              <input type="text" id="setMerchantCity" class="form-control" placeholder="Chennai">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Currency</label>
+              <input type="text" id="setCurrency" class="form-control" value="INR" readonly>
+            </div>
+          </div>
+          <div class="form-group" style="margin-top:8px;">
+            <label class="form-label">Payment Note (Optional)</label>
+            <input type="text" id="setPaymentNote" class="form-control" placeholder="POS Retail Store Billing">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Return & Exchange Policy (Printed on Invoice Footer)</label>
+          <input type="text" id="setReturnPolicy" class="form-control" value="Goods once sold can be returned within 7 days with original invoice.">
+        </div>
+
+        <button class="btn-pos btn-success" onclick="posApp.saveSettingsFromModal()" style="margin-top:10px;">💾 Save Branding & Settings</button>
+      </div>
+    </section>
+
+    <!-- KEYBOARD SHORTCUTS FOOTER BAR -->
+    <footer class="pos-footer-shortcuts">
+      <div class="shortcut-chip"><span class="key">F2</span> Search Product</div>
+      <div class="shortcut-chip"><span class="key">F4</span> Checkout</div>
+      <div class="shortcut-chip"><span class="key">F6</span> Hold Bill</div>
+      <div class="shortcut-chip"><span class="key">F7</span> Customer</div>
+      <div class="shortcut-chip"><span class="key">F8</span> Discount</div>
+      <div class="shortcut-chip"><span class="key">F9</span> Focus Barcode</div>
+      <div class="shortcut-chip"><span class="key">Delete</span> Remove Line</div>
+      <div class="shortcut-chip"><span class="key">Ctrl+N</span> New Bill</div>
+      <div class="shortcut-chip"><span class="key">Ctrl+P</span> Print Receipt</div>
+    </footer>
+
+  </div>
+
+  <!-- ==================== MOBILE STICKY SUMMARY & NAVIGATION ==================== -->
+  <div class="mobile-sticky-summary" id="mobileStickySummary">
+    <div>
+      <div style="font-size:11px; color:var(--text-muted);">Total: <span id="mStickySubtotal">₹0.00</span></div>
+      <div style="font-size:18px; font-weight:800; color:var(--accent-success);" id="mStickyGrandTotal">₹0.00</div>
+    </div>
+    <button class="btn-pos btn-success" style="padding:10px 18px; font-size:14px;" onclick="posApp.openPaymentModal()">
+      Checkout [F4]
+    </button>
+  </div>
+
+  <button class="fab-btn" onclick="posApp.openQuickAddProductModal()" title="Quick Add Product">+</button>
+
+  <nav class="mobile-bottom-nav">
+    <div class="mobile-nav-item active" data-view="billing" onclick="posApp.switchView('billing')">
+      <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+      Billing
+    </div>
+    <div class="mobile-nav-item" data-view="products" onclick="posApp.switchView('products')">
+      <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
+      Products
+    </div>
+    <div class="mobile-nav-item" data-view="dashboard" onclick="posApp.switchView('dashboard')">
+      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+      Dashboard
+    </div>
+    <div class="mobile-nav-item" data-view="reports" onclick="posApp.switchView('reports')">
+      <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2v-4h2v4zm4 0h-2v-10h2v10z"/></svg>
+      Reports
+    </div>
+    <div class="mobile-nav-item" data-view="settings" onclick="posApp.switchView('settings')">
+      <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+      Settings
+    </div>
+  </nav>
+
+  <!-- ==================== MOBILE CAMERA SCANNER OVERLAY ==================== -->
+  <div class="camera-modal-overlay" id="cameraScannerModal">
+    <div class="camera-header-controls">
+      <button class="camera-btn" id="cameraTorchBtn" onclick="posApp.toggleCameraTorch()">⚡ Flash OFF</button>
+      <button class="camera-btn" id="dateTimeBtn" onclick="posApp.toggleCameraContinuous()">🔁 Single Mode</button>
+      <button class="camera-btn" onclick="posApp.switchCameraDevice()">🔄 Switch Cam</button>
+      <button class="camera-btn" style="background:var(--accent-danger);" onclick="posApp.closeCameraScanner()">✕ Close</button>
+    </div>
+
+    <div class="camera-viewfinder-wrapper">
+      <video id="cameraVideo" autoplay playsinline></video>
+
+      <div class="camera-scan-frame" id="cameraScanFrame">
+        <div class="scan-corner top-left"></div>
+        <div class="scan-corner top-right"></div>
+        <div class="scan-corner bottom-left"></div>
+        <div class="scan-corner bottom-right"></div>
+        <div class="scan-laser-line"></div>
+      </div>
+    </div>
+
+    <div class="camera-bottom-controls">
+      <button class="btn-pos btn-success" style="padding:12px 24px; font-size:15px; border-radius:24px;" onclick="posApp.closeCameraScanner()">
+        ✓ DONE SCANNING
+      </button>
+    </div>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- 1. BARCODE NOT FOUND MODAL -->
+  <div class="modal-overlay" id="notFoundModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title" style="color:var(--accent-warning);">⚠️ Barcode Not Found</div>
+        <button class="icon-btn" onclick="posApp.closeModal('notFoundModal')">✕</button>
+      </div>
+      <div class="modal-body" style="text-align:center;">
+        <p style="font-size:14px; color:var(--text-secondary);">Scanned barcode does not exist in catalog:</p>
+        <div style="background:var(--bg-input); border:1px solid var(--border-color); padding:12px; border-radius:var(--radius-sm); font-family:var(--font-mono); font-size:22px; font-weight:bold; color:var(--accent-warning);" id="notFoundBarcodeVal">
+          XXXXXXXXXXXX
+        </div>
+        <p style="font-size:13px; color:var(--text-muted);">Would you like to create this product or scan again?</p>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button class="btn-pos btn-secondary" onclick="posApp.closeModal('notFoundModal'); posApp.openCameraScanner();">📷 Scan Again</button>
+        <div style="display:flex; gap:8px;">
+          <button class="btn-pos btn-secondary" onclick="posApp.closeModal('notFoundModal')">Cancel</button>
+          <button class="btn-pos btn-primary" onclick="posApp.openQuickAddProductModal()">+ Create Product</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. QUICK PRODUCT CREATION MODAL -->
+  <div class="modal-overlay" id="quickAddModal">
+    <div class="modal-box" style="max-width:600px;">
+      <div class="modal-header">
+        <div class="modal-title">📦 Quick Product Creation</div>
+        <button class="icon-btn" onclick="posApp.closeModal('quickAddModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Product Name *</label>
+          <input type="text" id="newProdName" class="form-control" placeholder="e.g. Organic Tea 250g" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Barcode (Auto Filled) *</label>
+            <input type="text" id="newProdBarcode" class="form-control font-mono" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select id="newProdCategory" class="form-control">
+              <option value="Grocery">Grocery</option>
+              <option value="Dairy">Dairy</option>
+              <option value="Snacks">Snacks</option>
+              <option value="Beverages">Beverages</option>
+              <option value="Personal Care">Personal Care</option>
+              <option value="Pharma">Pharma</option>
+              <option value="Hardware">Hardware</option>
+              <option value="General">General</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Purchase Price (₹)</label>
+            <input type="number" id="newProdPurchasePrice" class="form-control" placeholder="0.00" step="0.01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Selling Price (₹) *</label>
+            <input type="number" id="newProdSellingPrice" class="form-control" placeholder="0.00" step="0.01" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">GST Tax (%)</label>
+            <select id="newProdGST" class="form-control">
+              <option value="0">0% (Exempted)</option>
+              <option value="5">5%</option>
+              <option value="12">12%</option>
+              <option value="18" selected>18%</option>
+              <option value="28">28%</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Unit</label>
+            <select id="newProdUnit" class="form-control">
+              <option value="Pcs">Pcs</option>
+              <option value="Kg">Kg</option>
+              <option value="Ltr">Ltr</option>
+              <option value="Box">Box</option>
+              <option value="Pack">Pack</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Opening Stock Quantity</label>
+          <input type="number" id="newProdStock" class="form-control" value="100">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-pos btn-secondary" onclick="posApp.closeModal('quickAddModal')">Cancel</button>
+        <button class="btn-pos btn-success" onclick="posApp.saveQuickProduct()">💾 Save & Add to Bill</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. PRODUCT SEARCH MODAL (F2) -->
+  <div class="modal-overlay" id="searchModal">
+    <div class="modal-box" style="max-width:750px;">
+      <div class="modal-header">
+        <div class="modal-title">🔍 Search Product Catalog [F2]</div>
+        <button class="icon-btn" onclick="posApp.closeModal('searchModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" class="form-control" placeholder="Type Name, Barcode, or SKU..." onkeyup="posApp.renderSearchResults(this.value)" autofocus>
+        <div id="searchResultsContainer" style="max-height:400px; overflow-y:auto; margin-top:10px;">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. PAYMENT CHECKOUT MODAL (F4) WITH DYNAMIC UPI QR -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal-box" style="max-width:580px;">
+      <div class="modal-header">
+        <div class="modal-title">💳 Standard NPCI UPI Payment Request [F4]</div>
+        <button class="icon-btn" onclick="posApp.closeModal('paymentModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- STORE & INVOICE HEADER INFORMATION CARD -->
+        <div style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:12px; display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:12px;">
+            <div id="payModalStoreLogoContainer" style="width:44px; height:44px; background:var(--bg-card); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:24px; overflow:hidden;">
+              🏪
+            </div>
+            <div>
+              <div style="font-weight:800; font-size:15px; color:var(--text-primary);" id="payModalStoreName">Offline Supermarket POS</div>
+              <div style="font-size:11px; color:var(--text-muted);">Customer: <b id="payModalCustName" style="color:var(--text-secondary);">Walk-in Customer</b></div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:10px; color:var(--text-muted);">INVOICE NO.</div>
+            <div style="font-family:var(--font-mono); font-weight:700; font-size:12px; color:var(--accent-primary);" id="payModalInvNo">INV-1001</div>
+          </div>
+        </div>
+
+        <div style="text-align:center; padding:12px; background:var(--bg-input); border-radius:var(--radius-md);">
+          <div style="font-size:11px; color:var(--text-muted); font-weight:700; text-transform:uppercase;">Total Amount Due</div>
+          <div style="font-size:32px; font-weight:800; color:var(--accent-success);" id="payModalGrandTotal">₹0.00</div>
+        </div>
+
+        <!-- STANDARD NPCI UPI PAYMENT CARD -->
+        <div class="upi-card" style="background:var(--bg-input); border:1px solid var(--border-color); border-radius:var(--radius-md); padding:14px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:10px;">
+          <div style="font-weight:700; font-size:14px; color:var(--text-primary);">📱 Standard NPCI UPI Payment QR</div>
+
+          <!-- Large High-Resolution 400x400 QR Container -->
+          <div id="payUPIQRContainer" style="background:#ffffff; padding:14px; border-radius:12px; box-shadow:var(--shadow-sm); min-width:240px; min-height:240px; display:flex; align-items:center; justify-content:center;">
+            <span style="color:#64748b; font-size:12px;">Click "Generate QR"</span>
+          </div>
+
+          <div style="font-size:13px; font-weight:700; color:var(--text-primary);">
+            UPI ID: <code id="payUPIIDVal" style="color:var(--accent-purple); background:rgba(139,92,246,0.1); padding:2px 8px; border-radius:4px; font-family:var(--font-mono);">bluoot.care@oksbi</code>
+          </div>
+          
+          <div style="font-size:12px; color:var(--accent-success); font-weight:700;">
+            Scan with any UPI app to pay.
+          </div>
+
+          <!-- OPEN UPI APP DIRECT DEEP LINK BUTTON -->
+          <button class="btn-deep-link" style="width:100%; justify-content:center; margin-top:2px;" onclick="posApp.openUPIAppDirect()">
+            📱 Pay Now (Open Installed App)
+          </button>
+
+          <!-- QUICK COPY & DOWNLOAD TOOLBAR -->
+          <div class="qr-download-toolbar" style="margin-top:4px;">
+            <button class="btn-pos btn-secondary" onclick="posApp.copyUpiId()">📋 Copy UPI ID</button>
+            <button class="btn-pos btn-secondary" onclick="posApp.copyUpiAmount()">📋 Copy Amount</button>
+            <button class="btn-pos btn-secondary" onclick="posApp.copyPaymentLink()">🔗 Copy Link</button>
+            <button class="btn-pos btn-secondary" onclick="posApp.downloadQRCode()">📥 Download QR</button>
+            <button class="btn-pos btn-secondary" onclick="posApp.triggerPrintReceipt()">🖨️ Print QR</button>
+          </div>
+
+          <!-- STEP 7: DEVELOPER DEBUG PANEL -->
+          <details style="width:100%; text-align:left; font-size:11px; margin-top:6px; color:var(--text-muted);">
+            <summary style="cursor:pointer; font-weight:700; color:var(--accent-primary);">🛠️ Developer Debug Section</summary>
+            <div style="background:var(--bg-app); border:1px solid var(--border-color); padding:10px; border-radius:6px; margin-top:4px; font-family:var(--font-mono); font-size:10px; display:flex; flex-direction:column; gap:4px;">
+              <div><b>Original URI:</b> <span id="payUPIDebugOriginal" style="color:var(--accent-success); word-break:break-all;">upi://pay?pa=merchant@okaxis&pn=ABC%20Super%20Market&am=0.00&cu=INR</span></div>
+              <div><b>Decoded URI:</b> <span id="payUPIDebugDecoded" style="color:var(--accent-purple); word-break:break-all;">upi://pay?pa=merchant@okaxis&pn=ABC%20Super%20Market&am=0.00&cu=INR</span></div>
+              <div><b>QR Version:</b> <span id="payUPIDebugVersion" style="color:var(--text-primary);">Version 5</span></div>
+              <div><b>Error Correction Level:</b> <span id="payUPIDebugECC" style="color:var(--text-primary);">M (15%)</span></div>
+              <div><b>Image Size:</b> <span id="payUPIDebugSize" style="color:var(--text-primary);">400 x 400 px</span></div>
+              <div><b>Validation Status:</b> <span id="payUPIDebugStatus" style="color:var(--accent-success); font-weight:700;">✓ QR Successfully Decoded</span></div>
+            </div>
+          </details>
+        </div>
+
+        <!-- PAYMENT STATUS BADGES -->
+        <div class="form-group" style="margin-top:6px;">
+          <label class="form-label">Payment Status</label>
+          <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px;">
+            <button class="btn-pos btn-secondary status-btn-paid active-status" id="btnStatusPaid" onclick="posApp.setPaymentStatus('Paid')">🟢 Paid</button>
+            <button class="btn-pos btn-secondary status-btn-pending" id="btnStatusPending" onclick="posApp.setPaymentStatus('Pending')">🟡 Pending</button>
+            <button class="btn-pos btn-secondary status-btn-failed" id="btnStatusFailed" onclick="posApp.setPaymentStatus('Failed')">🔴 Failed</button>
+            <button class="btn-pos btn-secondary status-btn-cancelled" id="btnStatusCancelled" onclick="posApp.setPaymentStatus('Cancelled')">⚪ Cancelled</button>
+            <button class="btn-pos btn-secondary status-btn-refunded" id="btnStatusRefunded" onclick="posApp.setPaymentStatus('Refunded')">🟣 Refunded</button>
+          </div>
+        </div>
+
+        <div class="form-row" style="margin-top:4px;">
+          <div class="form-group">
+            <label class="form-label">Payment Method</label>
+            <select id="payMethodSelect" class="form-control" onchange="posApp.currentPaymentMethod = this.value">
+              <option value="UPI / QR" selected>📱 UPI / QR</option>
+              <option value="Cash">💵 Cash</option>
+              <option value="Card">💳 Card</option>
+              <option value="Other">⚙️ Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">UPI UTR / Ref Number</label>
+            <input type="text" id="payUpiRefNumber" class="form-control font-mono" placeholder="e.g. 320984719283">
+          </div>
+        </div>
+
+        <div class="form-row" style="margin-top:4px;">
+          <div class="form-group">
+            <label class="form-label">Amount Tendered</label>
+            <input type="number" id="payAmountTendered" class="form-control font-mono" style="font-size:16px; font-weight:bold;" oninput="posApp.calculateChange()">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Change Due</label>
+            <div style="font-size:16px; font-weight:bold; color:var(--accent-warning); padding:6px 0;" id="payChangeDue">₹0.00</div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top:4px;">
+          <label class="form-label">Remarks / Payment Note</label>
+          <input type="text" id="payRemarksInput" class="form-control" placeholder="e.g. Paid via GPay">
+        </div>
+      </div>
+
+      <div class="modal-footer" style="flex-wrap:wrap; justify-content:space-between; gap:6px;">
+        <div style="display:flex; gap:6px;">
+          <button class="btn-pos btn-secondary" style="padding:6px 10px; font-size:11px;" onclick="posApp.shareInvoice()">🔗 Share</button>
+          <button class="btn-pos btn-secondary" style="padding:6px 10px; font-size:11px;" onclick="posApp.clearCart(); posApp.closeModal('paymentModal');">✨ New Bill</button>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn-pos btn-secondary" onclick="posApp.closeModal('paymentModal')">Cancel</button>
+          <button class="btn-pos btn-success" style="padding:8px 14px;" onclick="posApp.completeCheckout(document.getElementById('payMethodSelect').value)">✓ Complete & Print</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. RECALL HELD BILLS MODAL (F6) -->
+  <div class="modal-overlay" id="heldBillsModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">📋 Held / Saved Bills</div>
+        <button class="icon-btn" onclick="posApp.closeModal('heldBillsModal')">✕</button>
+      </div>
+      <div class="modal-body" id="heldBillsContainer">
+        <!-- Injected dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. CUSTOMER MODAL (F7) -->
+  <div class="modal-overlay" id="customerModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title">👤 Select / Add Customer [F7]</div>
+        <button class="icon-btn" onclick="posApp.closeModal('customerModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Customer Name *</label>
+          <input type="text" id="custNameInput" class="form-control" value="Walk-in Customer">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Mobile Number</label>
+            <input type="text" id="custPhoneInput" class="form-control" placeholder="+91 9876543210">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Customer ID</label>
+            <input type="text" id="custIDInput" class="form-control" placeholder="CUST-001">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email Address (Optional)</label>
+            <input type="email" id="custEmailInput" class="form-control" placeholder="customer@gmail.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">GSTIN (Optional)</label>
+            <input type="text" id="custGSTINInput" class="form-control" placeholder="27BBBBB1111B1Z2">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Address (Optional)</label>
+          <input type="text" id="custAddressInput" class="form-control" placeholder="City, State">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-pos btn-primary" onclick="posApp.saveCustomerFromModal()">Save Customer Details</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. ENHANCED RECEIPT PREVIEW MODAL WITH FORMAT SWITCHER -->
+  <div class="modal-overlay" id="receiptPreviewModal">
+    <div class="modal-box" style="max-width:650px;">
+      <div class="modal-header">
+        <div class="modal-title">📄 Invoice Preview & Print Engine</div>
+        <div style="display:flex; gap:6px;">
+          <button class="btn-pos btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="posApp.switchReceiptFormat('80mm')">80mm Thermal</button>
+          <button class="btn-pos btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="posApp.switchReceiptFormat('58mm')">58mm Thermal</button>
+          <button class="btn-pos btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="posApp.switchReceiptFormat('a4')">A4 Page</button>
+          <button class="icon-btn" onclick="posApp.closeModal('receiptPreviewModal')">✕</button>
+        </div>
+      </div>
+      <div class="modal-body" style="background:#f1f5f9; color:#000; padding:16px;" id="receiptPreviewContent">
+        <!-- Injected dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn-pos btn-secondary" onclick="posApp.closeModal('receiptPreviewModal')">Close</button>
+        <button class="btn-pos btn-primary" onclick="window.print();">🖨️ Print / Export PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIDDEN PRINT CONTAINER FOR THERMAL & A4 PRINTERS -->
+  <div id="receiptPrintArea"></div>
+
+  <!-- FLASH TOAST BANNER -->
+  <div class="flash-toast" id="flashToast">
+    Product Added Successfully
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/storage.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/barcode.js"></script>
+  <script src="js/camera-scanner.js"></script>
+  <script src="js/qrcode.js"></script>
+  <script src="js/pos.js"></script>
+
+</body>
+</html>
