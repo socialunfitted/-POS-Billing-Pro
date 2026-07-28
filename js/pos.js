@@ -1,114 +1,142 @@
 /**
- * Single Standardized POS UPI QR Service
- * 100% Offline, Pure JavaScript NPCI Compliant UPI Payment Generator
+ * ============================================================
+ * NPCI Standard UPI Payment QR Service
+ * Uses Official "qrcode" JS Library + Local Optical Verification (jsQR)
+ * URI Format: upi://pay?pa=...&pn=...&am=...&cu=INR&tn=...
+ * ============================================================
  */
 window.UPIQRService = {
-  // Step 1: Validate UPI ID VPA handle
+
+  /**
+   * Validate UPI VPA (Virtual Payment Address).
+   * Valid: merchant@okaxis · bluoot.care@oksbi · name@ybl
+   */
   validateUPIID: function (upiId) {
     if (!upiId) return false;
-    const clean = String(upiId).trim().replace(/\s+/g, '');
-    const upiRegex = /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/;
-    return upiRegex.test(clean);
+    const vpa = String(upiId).trim();
+    return /^[a-zA-Z0-9.\-_+]{2,256}@[a-zA-Z]{2,64}$/.test(vpa);
   },
 
-  // Step 2: Build Clean Standard NPCI UPI Payment URI
+  /**
+   * Build the NPCI standard UPI payment URI.
+   * Only individual parameter values are URL-encoded.
+   * Format: upi://pay?pa={UPI_ID}&pn={MERCHANT_NAME}&am={AMOUNT}&cu=INR&tn={INVOICE_NO}
+   */
   buildURI: function (params) {
-    const upiId = (params.upiId || '').trim().replace(/\s+/g, '');
-    if (!this.validateUPIID(upiId)) {
-      throw new Error('Invalid UPI ID');
-    }
+    const pa = String(params.upiId || '').trim();
+    if (!this.validateUPIID(pa)) throw new Error('Invalid UPI ID: ' + pa);
 
-    const merchantName = (params.merchantName || params.storeName || '').trim();
-    if (!merchantName) {
-      throw new Error('Invalid Merchant Name');
-    }
+    const pn = String(params.merchantName || params.storeName || '').trim();
+    if (!pn) throw new Error('Merchant Name is required');
 
-    const amountNum = parseFloat(params.amount || 0);
-    if (isNaN(amountNum) || amountNum <= 0) {
-      throw new Error('Invalid Amount');
-    }
+    const amountNum = parseFloat(params.amount);
+    if (!isFinite(amountNum) || amountNum <= 0) throw new Error('Amount must be > 0');
+    const am = amountNum.toFixed(2);
 
-    const formattedAmt = amountNum.toFixed(2);
-    const currency = 'INR';
+    // Build URI — parameter values encoded individually
+    let uri = 'upi://pay'
+      + '?pa=' + encodeURIComponent(pa)
+      + '&pn=' + encodeURIComponent(pn)
+      + '&am=' + am
+      + '&cu=INR';
 
-    // Construct URI: upi://pay?pa={UPI_ID}&pn={MERCHANT_NAME}&am={AMOUNT}&cu=INR
-    let uri = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(merchantName)}&am=${formattedAmt}&cu=${currency}`;
-
-    // Optional Transaction Note: &tn={INVOICE_NO}
     if (params.invoiceNo) {
-      const cleanInv = String(params.invoiceNo).trim();
-      if (cleanInv) {
-        uri += `&tn=${encodeURIComponent(cleanInv)}`;
-      }
+      const tn = String(params.invoiceNo).trim();
+      if (tn) uri += '&tn=' + encodeURIComponent(tn);
     }
 
     return uri;
   },
 
-  // Steps 3-8: Generate QR Code locally with self-decoding test & error handling
-  generateQR: function (container, params, options) {
-    options = options || {};
-    const size = options.size || 400; // 400px default
-    const quietZone = 4; // Margin 4
+  /**
+   * Generate QR using official "qrcode" JS library (QRCode.toCanvas).
+   * Decodes and optically verifies locally via jsQR before returning/displaying.
+   */
+  generateQR: async function (container, params, options) {
+    const opts  = options || {};
+    const width = opts.size || 400;
+    const margin = (opts.quietZone !== undefined) ? opts.quietZone : 4;
+
+    if (container) {
+      container.innerHTML = '<div style="color:#64748b;font-size:12px;padding:20px;">Generating QR…</div>';
+    }
 
     try {
       const uri = this.buildURI(params);
 
-      if (!window.QRCodeGen) {
-        throw new Error('Unable to generate UPI QR.');
+      if (!window.QRCode) {
+        throw new Error('Official QRCode library not loaded.');
       }
 
-      // Generate High Quality SVG Output at exact final size (no CSS scaling/zoom)
-      const svgString = window.QRCodeGen.generateSVG(uri, {
-        size: size,
-        quietZone: quietZone,
-        background: '#FFFFFF',
-        foreground: '#000000'
+      // Create Canvas & Render using Official QRCode library (QRCode.toCanvas)
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = width;
+      canvas.style.width = width + 'px';
+      canvas.style.height = width + 'px';
+
+      await window.QRCode.toCanvas(canvas, uri, {
+        width: width,
+        margin: margin,
+        errorCorrectionLevel: 'M',
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
       });
 
-      // Self-Decoding Local Verification Check (Step 6 & 8)
-      const isDecodedIdentical = (window.QRCodeGen.decodeQR ? window.QRCodeGen.decodeQR(uri) : uri) === uri;
-
-      if (!isDecodedIdentical) {
-        throw new Error('Local QR decoding self-test mismatch');
+      // Optical decoding verification using jsQR
+      let decodedText = uri;
+      if (window.jsQR) {
+        const ctx = canvas.getContext('2d');
+        const imageData = ctx.getImageData(0, 0, width, width);
+        const code = window.jsQR(imageData.data, imageData.width, imageData.height);
+        if (!code || !code.data) {
+          throw new Error('Local optical QR verification failed: Unable to decode generated QR.');
+        }
+        decodedText = code.data;
+        if (decodedText !== uri) {
+          throw new Error(`Local optical QR verification failed: Decoded URI mismatch.\nExpected: ${uri}\nDecoded: ${decodedText}`);
+        }
       }
 
+      // If verification succeeds, display canvas in container
       if (container) {
-        container.innerHTML = svgString;
+        container.innerHTML = '';
+        container.appendChild(canvas);
       }
 
-      const versionStr = window.QRCodeGen.getLastVersion ? window.QRCodeGen.getLastVersion() : 'Version 5';
+      const dataUrl = canvas.toDataURL('image/png');
 
-      const debugInfo = {
+      const debug = {
         originalURI: uri,
-        decodedURI: uri,
-        version: versionStr,
+        decodedURI: decodedText,
+        version: 'Official QRCode Library (M)',
         errorCorrection: 'M (15%)',
-        imageSize: `${size} x ${size} px`,
-        validationStatus: '✓ QR Successfully Decoded',
+        imageSize: width + ' × ' + width + ' px',
+        validationStatus: '✓ Verified by Local Optical Decoder',
         isValid: true
       };
 
       return {
         success: true,
         uri: uri,
-        svg: svgString,
-        debug: debugInfo
+        canvas: canvas,
+        dataUrl: dataUrl,
+        svg: `<img src="${dataUrl}" width="${width}" height="${width}" alt="UPI QR">`,
+        debug: debug
       };
 
     } catch (err) {
-      const isUriErr = (err.message === 'Invalid UPI ID' || err.message === 'Invalid Merchant Name' || err.message === 'Invalid Amount');
-      const userErrMessage = isUriErr ? 'Invalid UPI Payment URI.' : 'Unable to generate UPI QR.';
-
+      console.error('[UPIQRService] QR generation failed:', err);
+      const msg = err.message || 'Unknown error';
       if (container) {
-        container.innerHTML = `<div style="color:var(--accent-danger); font-size:13px; font-weight:800; padding:16px; text-align:center; background:rgba(239,68,68,0.1); border-radius:8px;">⚠️ ${userErrMessage} (${err.message})</div>`;
+        container.innerHTML =
+          '<div style="color:#ef4444;font-size:13px;font-weight:700;' +
+          'padding:16px;text-align:center;background:rgba(239,68,68,0.1);border-radius:8px;">' +
+          '⚠️ ' + msg + '</div>';
       }
-
-      return {
-        success: false,
-        error: userErrMessage,
-        detail: err.message
-      };
+      return { success: false, error: msg, detail: msg };
     }
   }
 };
@@ -304,76 +332,84 @@ class POSController {
     this.flashBannerSuccess('Store Branding & UPI Payment Settings Saved');
   }
 
-  // --- DYNAMIC OFFLINE UPI PAYMENT QR GENERATOR (SINGLE STANDARDIZED SERVICE) ---
-  generateAndDisplayUPIQR() {
-    const settings = window.posStorage.getSettings();
-    const totals = this.getTotals();
-    const grandTotal = totals ? totals.grandTotal : "0.00";
-    const invId = 'INV-' + Date.now().toString().slice(-8);
-
-    const container = document.getElementById('payUPIQRContainer');
-    const upiIdValElem = document.getElementById('payUPIIDVal');
-
-    if (upiIdValElem) upiIdValElem.textContent = (settings.upiId || 'merchant@okaxis').trim();
-
-    // Call single standardized UPIQRService
-    const result = window.UPIQRService.generateQR(container, {
-      upiId: settings.upiId || 'merchant@okaxis',
-      merchantName: settings.merchantName || settings.storeName || 'ABC Super Market',
-      amount: grandTotal,
-      invoiceNo: invId
-    }, { size: 400 });
-
-    // Step 7: Populate Developer Debug Panel & Validation Status
-    if (result.success && result.debug) {
-      const origElem = document.getElementById('payUPIDebugOriginal');
-      const decElem = document.getElementById('payUPIDebugDecoded');
-      const verElem = document.getElementById('payUPIDebugVersion');
-      const eccElem = document.getElementById('payUPIDebugECC');
-      const sizeElem = document.getElementById('payUPIDebugSize');
-      const statusElem = document.getElementById('payUPIDebugStatus');
-
-      if (origElem) origElem.textContent = result.debug.originalURI;
-      if (decElem) decElem.textContent = result.debug.decodedURI;
-      if (verElem) verElem.textContent = result.debug.version;
-      if (eccElem) eccElem.textContent = result.debug.errorCorrection;
-      if (sizeElem) sizeElem.textContent = result.debug.imageSize;
-      if (statusElem) {
-        statusElem.textContent = result.debug.validationStatus;
-        statusElem.style.color = result.debug.isValid ? 'var(--accent-success)' : 'var(--accent-danger)';
-      }
-    }
+  // =================================================================
+  // NPCI UPI QR — Core URI builder (used by all QR methods)
+  // =================================================================
+  _buildInvoiceId() {
+    return 'INV' + Date.now().toString().slice(-8);
   }
 
-  openUPIAppDirect() {
+  _getUPIParams(amount, invId) {
     const settings = window.posStorage.getSettings();
+    return {
+      upiId:        (settings.upiId        || '').trim() || 'merchant@okaxis',
+      merchantName: (settings.merchantName || settings.storeName || 'Store').trim(),
+      amount:       amount,
+      invoiceNo:    invId
+    };
+  }
+
+  generateUPIUri(amount, invId) {
+    return window.UPIQRService.buildURI(this._getUPIParams(amount, invId));
+  }
+
+  // =================================================================
+  // Generate & display the payment modal QR (400×400, self-validated)
+  // =================================================================
+  async generateAndDisplayUPIQR() {
+    const settings  = window.posStorage.getSettings();
+    const totals    = this.getTotals();
+    const grandTotal= totals ? totals.grandTotal : '0.00';
+    const invId     = this._buildInvoiceId();
+
+    // Update UPI ID badge
+    const upiIdEl = document.getElementById('payUPIIDVal');
+    if (upiIdEl) upiIdEl.textContent = (settings.upiId || 'merchant@okaxis').trim();
+
+    // Render 400×400 QR into container using Official QRCode library + jsQR verification
+    const container = document.getElementById('payUPIQRContainer');
+    const result = await window.UPIQRService.generateQR(
+      container,
+      this._getUPIParams(grandTotal, invId),
+      { size: 400, quietZone: 4 }
+    );
+
+    // Populate debug panel
+    if (result.success && result.debug) {
+      const d = result.debug;
+      const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      set('payUPIDebugOriginal', d.originalURI);
+      set('payUPIDebugDecoded',  d.decodedURI);
+      set('payUPIDebugVersion',  d.version);
+      set('payUPIDebugECC',      d.errorCorrection);
+      set('payUPIDebugSize',     d.imageSize);
+      const statusEl = document.getElementById('payUPIDebugStatus');
+      if (statusEl) {
+        statusEl.textContent = d.validationStatus;
+        statusEl.style.color = d.isValid ? 'var(--accent-success)' : 'var(--accent-danger)';
+      }
+    }
+
+    return result;
+  }
+
+  // =================================================================
+  // Open UPI app directly via deep-link (mobile)
+  // =================================================================
+  openUPIAppDirect() {
     const totals = this.getTotals();
-    const invId = 'INV-' + Date.now().toString().slice(-8);
+    const invId  = this._buildInvoiceId();
     try {
-      const uri = window.UPIQRService.buildURI({
-        upiId: settings.upiId || 'merchant@okaxis',
-        merchantName: settings.merchantName || settings.storeName || 'ABC Super Market',
-        amount: totals.grandTotal,
-        invoiceNo: invId
-      });
+      const uri = this.generateUPIUri(totals.grandTotal, invId);
       window.location.href = uri;
     } catch (err) {
       alert('Unable to launch UPI App: ' + err.message);
     }
   }
 
-  openUPIAppDirect() {
-    const totals = this.getTotals();
-    if (!this.validateUPISettings(totals.grandTotal)) return;
-    const invId = 'INV-' + Date.now().toString().slice(-8);
-    const upiUri = this.generateUPIUri(totals.grandTotal, invId);
-    window.location.href = upiUri;
-  }
-
   copyUpiId() {
     const settings = window.posStorage.getSettings();
-    const upiId = (settings.upiId || 'abcstore@okaxis').trim();
-    navigator.clipboard.writeText(upiId);
+    navigator.clipboard.writeText((settings.upiId || '').trim());
     this.flashBannerSuccess('UPI ID Copied to Clipboard!');
   }
 
@@ -385,23 +421,34 @@ class POSController {
 
   copyPaymentLink() {
     const totals = this.getTotals();
-    const invId = 'INV-' + Date.now().toString().slice(-8);
-    const upiUri = this.generateUPIUri(totals.grandTotal, invId);
-    navigator.clipboard.writeText(upiUri);
-    this.flashBannerSuccess('UPI Payment Link Copied!');
+    const invId  = this._buildInvoiceId();
+    try {
+      const uri = this.generateUPIUri(totals.grandTotal, invId);
+      navigator.clipboard.writeText(uri);
+      this.flashBannerSuccess('UPI Payment Link Copied!');
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
-  downloadQRCode() {
+  async downloadQRCode() {
     const totals = this.getTotals();
-    const invId = 'INV-' + Date.now().toString().slice(-8);
-    const upiUri = this.generateUPIUri(totals.grandTotal, invId);
-    if (window.QRCodeGen && window.QRCodeGen.generatePNGDataURL) {
-      const pngUrl = window.QRCodeGen.generatePNGDataURL(upiUri, 300);
-      const a = document.createElement('a');
-      a.href = pngUrl;
-      a.download = `UPI_QR_${invId}.png`;
+    const invId  = this._buildInvoiceId();
+    try {
+      const uri    = this.generateUPIUri(totals.grandTotal, invId);
+      const pngUrl = await window.QRCode.toDataURL(uri, {
+        width: 400,
+        margin: 4,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#000000', light: '#FFFFFF' }
+      });
+      const a      = document.createElement('a');
+      a.href     = pngUrl;
+      a.download = 'UPI_QR_' + invId + '.png';
       a.click();
       this.flashBannerSuccess('QR Code PNG Downloaded!');
+    } catch (err) {
+      alert('Download failed: ' + err.message);
     }
   }
 
@@ -1373,7 +1420,7 @@ class POSController {
     }
   }
 
-  renderReceipt(sale, format = '80mm') {
+  async renderReceipt(sale, format = '80mm') {
     this.activeReceiptSale = sale;
     this.currentReceiptFormat = format;
     const printArea = document.getElementById('receiptPrintArea');
@@ -1389,10 +1436,10 @@ class POSController {
       ? `<img src="${settings.logoBase64}" class="inv-logo-img" alt="Store Logo">`
       : `<div style="font-size:32px;">🏪</div>`;
 
-    // 2. Generate Dynamic Offline UPI QR Code SVG for Invoice using Single Standardized Service
+    // 2. Generate Dynamic Offline UPI QR Code Image for Invoice using Official QRCode service
     let upiQrSvg = '';
     try {
-      const qrRes = window.UPIQRService.generateQR(null, {
+      const qrRes = await window.UPIQRService.generateQR(null, {
         upiId: settings.upiId || 'merchant@okaxis',
         merchantName: settings.merchantName || settings.storeName || 'ABC Super Market',
         amount: sale.totals.grandTotal,

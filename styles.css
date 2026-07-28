@@ -760,14 +760,70 @@ body {
   }
 
   .modal-box {
-    width: 95vw;
-    max-height: 88vh;
-    border-radius: var(--radius-md);
+    width: 95vw !important;
+    max-width: 540px !important;
+    max-height: 94vh !important;
+    border-radius: var(--radius-md) !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
 
   .modal-body {
-    padding: 14px;
-    gap: 10px;
+    padding: 12px !important;
+    gap: 10px !important;
+    max-height: calc(94vh - 110px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  /* Responsive QR Code Container & Scaling on Mobile */
+  #payUPIQRContainer {
+    width: 100% !important;
+    max-width: 280px !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  #payUPIQRContainer canvas,
+  #payUPIQRContainer img,
+  #payUPIQRContainer svg {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
+  .qr-download-toolbar {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    justify-content: center !important;
+    width: 100% !important;
+  }
+
+  .qr-download-toolbar button {
+    flex: 1 1 calc(50% - 4px) !important;
+    font-size: 11px !important;
+    padding: 8px 6px !important;
+    white-space: nowrap !important;
+  }
+
+  .status-btn-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+
+  .status-btn-container button {
+    flex: 1 1 calc(33.33% - 4px) !important;
+    min-width: 80px !important;
+    font-size: 11px !important;
+    padding: 8px 4px !important;
+    text-align: center !important;
+    justify-content: center !important;
   }
 
   /* 5. STICKY BOTTOM CHECKOUT SUMMARY BAR */

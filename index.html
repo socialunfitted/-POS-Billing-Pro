@@ -580,7 +580,7 @@
   <div class="modal-overlay" id="paymentModal">
     <div class="modal-box" style="max-width:580px;">
       <div class="modal-header">
-        <div class="modal-title">💳 Standard NPCI UPI Payment Request [F4]</div>
+        <div class="modal-title">💳 BILL PAYMENT [F4]</div>
         <button class="icon-btn" onclick="posApp.closeModal('paymentModal')">✕</button>
       </div>
       <div class="modal-body">
@@ -637,25 +637,12 @@
             <button class="btn-pos btn-secondary" onclick="posApp.downloadQRCode()">📥 Download QR</button>
             <button class="btn-pos btn-secondary" onclick="posApp.triggerPrintReceipt()">🖨️ Print QR</button>
           </div>
-
-          <!-- STEP 7: DEVELOPER DEBUG PANEL -->
-          <details style="width:100%; text-align:left; font-size:11px; margin-top:6px; color:var(--text-muted);">
-            <summary style="cursor:pointer; font-weight:700; color:var(--accent-primary);">🛠️ Developer Debug Section</summary>
-            <div style="background:var(--bg-app); border:1px solid var(--border-color); padding:10px; border-radius:6px; margin-top:4px; font-family:var(--font-mono); font-size:10px; display:flex; flex-direction:column; gap:4px;">
-              <div><b>Original URI:</b> <span id="payUPIDebugOriginal" style="color:var(--accent-success); word-break:break-all;">upi://pay?pa=merchant@okaxis&pn=ABC%20Super%20Market&am=0.00&cu=INR</span></div>
-              <div><b>Decoded URI:</b> <span id="payUPIDebugDecoded" style="color:var(--accent-purple); word-break:break-all;">upi://pay?pa=merchant@okaxis&pn=ABC%20Super%20Market&am=0.00&cu=INR</span></div>
-              <div><b>QR Version:</b> <span id="payUPIDebugVersion" style="color:var(--text-primary);">Version 5</span></div>
-              <div><b>Error Correction Level:</b> <span id="payUPIDebugECC" style="color:var(--text-primary);">M (15%)</span></div>
-              <div><b>Image Size:</b> <span id="payUPIDebugSize" style="color:var(--text-primary);">400 x 400 px</span></div>
-              <div><b>Validation Status:</b> <span id="payUPIDebugStatus" style="color:var(--accent-success); font-weight:700;">✓ QR Successfully Decoded</span></div>
-            </div>
-          </details>
         </div>
 
         <!-- PAYMENT STATUS BADGES -->
         <div class="form-group" style="margin-top:6px;">
           <label class="form-label">Payment Status</label>
-          <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:6px;">
+          <div class="status-btn-container" style="display:flex; flex-wrap:wrap; gap:6px;">
             <button class="btn-pos btn-secondary status-btn-paid active-status" id="btnStatusPaid" onclick="posApp.setPaymentStatus('Paid')">🟢 Paid</button>
             <button class="btn-pos btn-secondary status-btn-pending" id="btnStatusPending" onclick="posApp.setPaymentStatus('Pending')">🟡 Pending</button>
             <button class="btn-pos btn-secondary status-btn-failed" id="btnStatusFailed" onclick="posApp.setPaymentStatus('Failed')">🔴 Failed</button>
