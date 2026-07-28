@@ -972,59 +972,117 @@ class POSController {
     document.getElementById('dashTotalProducts').textContent = count;
   }
 
+  toggleMobileDrawer(open) {
+    const drawer = document.getElementById('mobileMenuDrawer');
+    if (!drawer) return;
+    if (open) {
+      const settings = window.posStorage.getSettings();
+      const storeEl = document.getElementById('mobileDrawerStoreName');
+      if (storeEl) storeEl.textContent = settings.storeName || 'Offline Supermarket POS';
+      const cashierEl = document.getElementById('mobileDrawerCashierName');
+      if (cashierEl) cashierEl.textContent = `${settings.cashierName || 'Alex Cashier'} • Offline POS`;
+
+      drawer.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    } else {
+      drawer.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  }
+
   async loadProductsView() {
     const container = document.getElementById('productsTableContainer');
     if (!container) return;
     const products = await window.posDB.getAllProducts(100);
 
-    let html = `
-      <table class="cart-table">
-        <thead>
-          <tr>
-            <th>Name</th>
-            <th>Barcode</th>
-            <th>SKU</th>
-            <th>Category</th>
-            <th>Stock</th>
-            <th>Purchase Price</th>
-            <th>Selling Price</th>
-            <th>GST %</th>
-          </tr>
-        </thead>
-        <tbody>
+    if (products.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">No products in catalog.</div>';
+      return;
+    }
+
+    let dHtml = `
+      <div class="products-table-desktop">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Barcode</th>
+              <th>SKU</th>
+              <th>Category</th>
+              <th>Stock</th>
+              <th>Purchase Price</th>
+              <th>Selling Price</th>
+              <th>GST %</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
 
+    let mHtml = `<div class="products-cards-mobile">`;
+
     products.forEach(p => {
-      html += `
+      const isLow = p.stock < 10;
+      const stockBadge = isLow
+        ? `<span class="badge" style="background:rgba(239,68,68,0.15); color:var(--accent-danger); border:1px solid rgba(239,68,68,0.3);">Low Stock: ${p.stock} ${p.unit}</span>`
+        : `<span class="badge" style="background:rgba(34,197,94,0.15); color:var(--accent-success); border:1px solid rgba(34,197,94,0.3);">${p.stock} ${p.unit}</span>`;
+
+      dHtml += `
         <tr>
           <td><b>${p.name}</b></td>
           <td><code>${p.barcode}</code></td>
-          <td>${p.sku}</td>
+          <td>${p.sku || '-'}</td>
           <td><span class="badge" style="background:var(--bg-input); color:var(--text-secondary); border:1px solid var(--border-color);">${p.category}</span></td>
-          <td><b style="${p.stock < 10 ? 'color:var(--accent-danger)' : ''}">${p.stock} ${p.unit}</b></td>
-          <td>₹${p.purchasePrice}</td>
-          <td><b>₹${p.sellingPrice}</b></td>
+          <td><b style="${isLow ? 'color:var(--accent-danger)' : ''}">${p.stock} ${p.unit}</b></td>
+          <td>₹${parseFloat(p.purchasePrice||0).toFixed(2)}</td>
+          <td><b>₹${parseFloat(p.sellingPrice||0).toFixed(2)}</b></td>
           <td>${p.gstPercent}%</td>
         </tr>
       `;
+
+      mHtml += `
+        <div class="mobile-catalog-card">
+          <div class="m-cat-header">
+            <div>
+              <div class="m-cat-title">${p.name}</div>
+              <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-top:2px;">BC: ${p.barcode}</div>
+            </div>
+            <span class="badge" style="background:var(--bg-input); color:var(--text-secondary); border:1px solid var(--border-color);">${p.category}</span>
+          </div>
+          <div class="m-cat-details">
+            <div>${stockBadge}</div>
+            <div style="font-size:16px; font-weight:800; color:var(--accent-success);">₹${parseFloat(p.sellingPrice||0).toFixed(2)}</div>
+          </div>
+        </div>
+      `;
     });
 
-    html += '</tbody></table>';
-    container.innerHTML = html;
+    dHtml += `</tbody></table></div>`;
+    mHtml += `</div>`;
+
+    container.innerHTML = dHtml + mHtml;
   }
 
   async loadCustomersView() {
     const container = document.getElementById('customersListContainer');
     if (!container) return;
     container.innerHTML = `
-      <div style="padding:16px; background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-color)">
-        <h3>Active Customer Profile</h3>
-        <p style="margin-top:6px;">Name: <b>${this.activeCustomer.name}</b></p>
-        <p>Phone: <b>${this.activeCustomer.phone}</b></p>
-        <p>Email: <b>${this.activeCustomer.email || 'N/A'}</b></p>
-        <p>Address: <b>${this.activeCustomer.address || 'N/A'}</b></p>
-        <p>GSTIN: <b>${this.activeCustomer.gstin || 'N/A'}</b></p>
-        <p>Customer ID: <b>${this.activeCustomer.id || 'CUST-WALKIN'}</b></p>
+      <div style="padding:20px; background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-color); display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border-color); padding-bottom:12px;">
+          <div style="font-size:36px; width:52px; height:52px; border-radius:50%; background:var(--bg-input); display:flex; align-items:center; justify-content:center; border:1px solid var(--border-color);">👤</div>
+          <div>
+            <h3 style="margin:0; font-size:18px;">${this.activeCustomer.name}</h3>
+            <span class="badge" style="background:rgba(14,165,233,0.15); color:var(--accent-primary); border:1px solid rgba(14,165,233,0.3); margin-top:4px; display:inline-block;">Active Checkout Profile</span>
+          </div>
+        </div>
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; font-size:13px;">
+          <div><span style="color:var(--text-muted);">Phone Number:</span> <br><b>${this.activeCustomer.phone || 'N/A'}</b></div>
+          <div><span style="color:var(--text-muted);">Email Address:</span> <br><b>${this.activeCustomer.email || 'N/A'}</b></div>
+          <div><span style="color:var(--text-muted);">GSTIN:</span> <br><b>${this.activeCustomer.gstin || 'N/A'}</b></div>
+          <div><span style="color:var(--text-muted);">Address:</span> <br><b>${this.activeCustomer.address || 'N/A'}</b></div>
+        </div>
+        <button class="btn-pos btn-secondary" onclick="posApp.openCustomerModal()" style="margin-top:6px; width:fit-content; padding:8px 16px;">
+          ✏️ Change Customer [F7]
+        </button>
       </div>
     `;
   }
@@ -1034,75 +1092,212 @@ class POSController {
     if (!container) return;
     const products = await window.posDB.getAllProducts(100);
 
-    let html = `
-      <table class="cart-table">
-        <thead>
-          <tr>
-            <th>Product</th>
-            <th>Barcode</th>
-            <th>Current Stock</th>
-            <th>Stock Status</th>
-          </tr>
-        </thead>
-        <tbody>
+    if (products.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); padding:20px; text-align:center;">No stock records found.</div>';
+      return;
+    }
+
+    let dHtml = `
+      <div class="inventory-table-desktop">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Barcode</th>
+              <th>Current Stock</th>
+              <th>Stock Status</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
+
+    let mHtml = `<div class="inventory-cards-mobile">`;
 
     products.forEach(p => {
       const isLow = p.stock < 20;
-      html += `
+      const statusBadge = `<span class="badge" style="background:${isLow ? 'rgba(239,68,68,0.2)' : 'rgba(34,197,94,0.2)'}; color:${isLow ? 'var(--accent-danger)' : 'var(--accent-success)'}; border:1px solid ${isLow ? 'rgba(239,68,68,0.4)' : 'rgba(34,197,94,0.4)'};">${isLow ? '⚠️ Low Stock' : '✅ In Stock'}</span>`;
+
+      dHtml += `
         <tr>
-          <td>${p.name}</td>
+          <td><b>${p.name}</b></td>
           <td><code>${p.barcode}</code></td>
           <td><b>${p.stock} ${p.unit}</b></td>
-          <td><span class="badge" style="background:${isLow ? 'var(--accent-danger)' : 'var(--accent-success)'}">${isLow ? 'Low Stock' : 'In Stock'}</span></td>
+          <td>${statusBadge}</td>
         </tr>
+      `;
+
+      mHtml += `
+        <div class="mobile-catalog-card">
+          <div class="m-cat-header">
+            <div>
+              <div class="m-cat-title">${p.name}</div>
+              <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); margin-top:2px;">BC: ${p.barcode}</div>
+            </div>
+            ${statusBadge}
+          </div>
+          <div class="m-cat-details" style="margin-top:4px;">
+            <div style="font-size:13px; color:var(--text-muted);">Stock Count:</div>
+            <div style="font-size:16px; font-weight:800; color:var(--text-primary);">${p.stock} ${p.unit}</div>
+          </div>
+        </div>
       `;
     });
 
-    html += '</tbody></table>';
-    container.innerHTML = html;
+    dHtml += `</tbody></table></div>`;
+    mHtml += `</div>`;
+
+    container.innerHTML = dHtml + mHtml;
   }
 
   async loadReportsView() {
     const container = document.getElementById('reportsLogContainer');
+    const kpiContainer = document.getElementById('reportsKpiSummary');
     if (!container) return;
-    const sales = await window.posDB.getSalesHistory(50);
 
-    if (sales.length === 0) {
-      container.innerHTML = '<p style="color:var(--text-muted); padding:16px;">No sale transactions recorded yet.</p>';
+    const sales = await window.posDB.getSalesHistory(100);
+    this.cachedSalesHistory = sales;
+
+    if (kpiContainer) {
+      let totalRev = 0;
+      sales.forEach(s => totalRev += parseFloat(s.totals?.grandTotal || 0));
+      const avgBill = sales.length > 0 ? (totalRev / sales.length).toFixed(2) : '0.00';
+
+      kpiContainer.innerHTML = `
+        <div class="report-kpi-card">
+          <div class="kpi-label">TOTAL REVENUE</div>
+          <div class="kpi-value text-success">₹${totalRev.toFixed(2)}</div>
+        </div>
+        <div class="report-kpi-card">
+          <div class="kpi-label">TOTAL INVOICES</div>
+          <div class="kpi-value text-primary">${sales.length}</div>
+        </div>
+        <div class="report-kpi-card">
+          <div class="kpi-label">AVG BILL VALUE</div>
+          <div class="kpi-value text-purple">₹${avgBill}</div>
+        </div>
+      `;
+    }
+
+    this.renderReportsList(sales);
+  }
+
+  filterReportsLogs(query) {
+    if (!this.cachedSalesHistory) return;
+    const q = (query || '').toLowerCase().trim();
+    if (!q) {
+      this.renderReportsList(this.cachedSalesHistory);
       return;
     }
 
-    let html = `
-      <table class="cart-table">
-        <thead>
-          <tr>
-            <th>Invoice ID</th>
-            <th>Time</th>
-            <th>Customer</th>
-            <th>Payment</th>
-            <th>Items</th>
-            <th>Grand Total</th>
-          </tr>
-        </thead>
-        <tbody>
+    const filtered = this.cachedSalesHistory.filter(s => {
+      const invId = (s.id || '').toLowerCase();
+      const cust = (s.customer?.name || '').toLowerCase();
+      const pm = (s.paymentMethod || '').toLowerCase();
+      return invId.includes(q) || cust.includes(q) || pm.includes(q);
+    });
+
+    this.renderReportsList(filtered);
+  }
+
+  renderReportsList(sales) {
+    const container = document.getElementById('reportsLogContainer');
+    if (!container) return;
+
+    if (!sales || sales.length === 0) {
+      container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:30px;">No sale transactions recorded yet.</div>';
+      return;
+    }
+
+    let dHtml = `
+      <div class="reports-table-desktop">
+        <table class="cart-table">
+          <thead>
+            <tr>
+              <th>Invoice ID</th>
+              <th>Date & Time</th>
+              <th>Customer</th>
+              <th>Payment</th>
+              <th>Items</th>
+              <th class="num">Grand Total</th>
+              <th style="text-align:center;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
     `;
 
+    let mHtml = `<div class="reports-cards-mobile">`;
+
     sales.forEach(s => {
-      html += `
+      const dateObj = new Date(s.timestamp);
+      const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const dateStr = dateObj.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
+
+      const pm = s.paymentMethod || 'UPI / QR';
+      const grand = parseFloat(s.totals?.grandTotal || 0).toFixed(2);
+      const custName = s.customer?.name || 'Walk-in Customer';
+      const itemsCount = s.items ? s.items.length : 0;
+
+      dHtml += `
         <tr>
-          <td><b>${s.id}</b></td>
-          <td>${new Date(s.timestamp).toLocaleTimeString()}</td>
-          <td>${s.customer.name}</td>
-          <td><span class="badge">${s.paymentMethod}</span></td>
-          <td>${s.items.length}</td>
-          <td class="font-bold" style="color:var(--accent-success)">₹${s.totals.grandTotal}</td>
+          <td><b class="font-mono text-primary" style="white-space:nowrap;">${s.id}</b></td>
+          <td style="white-space:nowrap;">${dateStr} ${timeStr}</td>
+          <td>${custName}</td>
+          <td><span class="badge badge-payment">${pm}</span></td>
+          <td>${itemsCount} Items</td>
+          <td class="num font-bold text-success" style="white-space:nowrap;">₹${grand}</td>
+          <td style="text-align:center;">
+            <button class="btn-pos btn-secondary" style="padding:4px 10px; font-size:11px; white-space:nowrap;" onclick="posApp.viewSaleReceipt('${s.id}')">
+              🖨️ Receipt
+            </button>
+          </td>
         </tr>
+      `;
+
+      mHtml += `
+        <div class="mobile-report-card">
+          <div class="m-report-header">
+            <div class="m-inv-id">${s.id}</div>
+            <span class="badge badge-payment">${pm}</span>
+          </div>
+
+          <div class="m-report-sub">
+            <span>📅 ${dateStr} • ${timeStr}</span>
+          </div>
+
+          <div class="m-report-body">
+            <div class="m-report-info">
+              <span class="m-cust-name">👤 ${custName}</span>
+              <span class="m-item-count">📦 ${itemsCount} Item${itemsCount === 1 ? '' : 's'}</span>
+            </div>
+            <div class="m-report-amount">
+              <div style="font-size:10px; color:var(--text-muted); text-align:right;">Grand Total</div>
+              <div class="m-grand-price">₹${grand}</div>
+            </div>
+          </div>
+
+          <div class="m-report-footer">
+            <button class="btn-pos btn-secondary" style="width:100%; padding:8px 12px; font-size:12px; justify-content:center;" onclick="posApp.viewSaleReceipt('${s.id}')">
+              🖨️ View & Print Receipt
+            </button>
+          </div>
+        </div>
       `;
     });
 
-    html += '</tbody></table>';
-    container.innerHTML = html;
+    dHtml += `</tbody></table></div>`;
+    mHtml += `</div>`;
+
+    container.innerHTML = dHtml + mHtml;
+  }
+
+  async viewSaleReceipt(saleId) {
+    const sales = await window.posDB.getSalesHistory(100);
+    const sale = sales.find(s => s.id === saleId);
+    if (sale) {
+      this.renderReceipt(sale, '80mm');
+    } else {
+      alert('Sale invoice record not found.');
+    }
   }
 
   // --- MODAL CONTROLLERS ---

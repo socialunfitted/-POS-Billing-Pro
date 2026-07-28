@@ -74,6 +74,10 @@
       </div>
 
       <div class="top-nav-actions">
+        <button class="icon-btn mobile-menu-btn" onclick="posApp.toggleMobileDrawer(true)" title="All Menus">
+          ☰
+        </button>
+
         <button class="btn-pos btn-secondary" onclick="posApp.openCameraScanner()" style="padding:4px 10px; font-size:12px; gap:4px;">
           📷 <span class="btn-text-desktop">Camera Scan</span>
         </button>
@@ -251,8 +255,18 @@
 
     <!-- ==================== VIEW 6: REPORTS ==================== -->
     <section class="view-section" id="view-reports" style="display:none;">
-      <h2>Sales & Invoice History Logs</h2>
-      <div id="reportsLogContainer" style="flex:1; overflow-y:auto; background:var(--bg-card); border-radius:var(--radius-md); border:1px solid var(--border-color); margin-top:12px;">
+      <div class="reports-header-bar">
+        <h2>Sales & Invoice History Logs</h2>
+        <div class="reports-search-box">
+          <input type="text" id="reportsSearchInput" class="form-control" placeholder="Search Invoice ID or Customer..." oninput="posApp.filterReportsLogs(this.value)">
+        </div>
+      </div>
+
+      <div class="reports-kpi-grid" id="reportsKpiSummary">
+        <!-- Injected dynamically -->
+      </div>
+
+      <div id="reportsLogContainer" class="reports-log-wrapper">
         <!-- Injected dynamically -->
       </div>
     </section>
@@ -413,19 +427,99 @@
       <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
       Products
     </div>
-    <div class="mobile-nav-item" data-view="dashboard" onclick="posApp.switchView('dashboard')">
-      <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-      Dashboard
+    <div class="mobile-nav-item" data-view="inventory" onclick="posApp.switchView('inventory')">
+      <svg viewBox="0 0 24 24"><path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zM4 3h16c.55 0 1 .45 1 1v6c0 .55-.45 1-1 1H4c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1z"/></svg>
+      Inventory
     </div>
     <div class="mobile-nav-item" data-view="reports" onclick="posApp.switchView('reports')">
       <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2v-4h2v4zm4 0h-2v-10h2v10z"/></svg>
       Reports
     </div>
-    <div class="mobile-nav-item" data-view="settings" onclick="posApp.switchView('settings')">
-      <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
-      Settings
+    <div class="mobile-nav-item" onclick="posApp.toggleMobileDrawer(true)">
+      <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      Menu ☰
     </div>
   </nav>
+
+  <!-- ==================== MOBILE NAVIGATION DRAWER ==================== -->
+  <div class="mobile-drawer-overlay" id="mobileMenuDrawer" onclick="if(event.target===this) posApp.toggleMobileDrawer(false)">
+    <div class="mobile-drawer-content">
+      <div class="mobile-drawer-header">
+        <div class="drawer-branding">
+          <div class="logo-icon">📦</div>
+          <div>
+            <div class="logo-text" id="mobileDrawerStoreName">POS Billing Pro</div>
+            <div class="drawer-subtext" id="mobileDrawerCashierName">Alex Cashier • Offline POS</div>
+          </div>
+        </div>
+        <button class="drawer-close-btn" onclick="posApp.toggleMobileDrawer(false)">✕</button>
+      </div>
+
+      <div class="mobile-drawer-nav">
+        <div class="drawer-nav-item" data-view="billing" onclick="posApp.switchView('billing'); posApp.toggleMobileDrawer(false);">
+          <svg viewBox="0 0 24 24"><path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.11-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49c.08-.14.12-.31.12-.48 0-.55-.45-1-1-1H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z"/></svg>
+          <div>
+            <div class="nav-title">Billing Workspace</div>
+            <div class="nav-desc">Quick checkout & barcode scan</div>
+          </div>
+        </div>
+
+        <div class="drawer-nav-item" data-view="dashboard" onclick="posApp.switchView('dashboard'); posApp.toggleMobileDrawer(false);">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          <div>
+            <div class="nav-title">Dashboard & Analytics</div>
+            <div class="nav-desc">Revenue, sales & catalog stats</div>
+          </div>
+        </div>
+
+        <div class="drawer-nav-item" data-view="products" onclick="posApp.switchView('products'); posApp.toggleMobileDrawer(false);">
+          <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-5 14H4v-4h11v4zm0-5H4V9h11v4zm5 5h-4V9h4v9z"/></svg>
+          <div>
+            <div class="nav-title">Products Catalog</div>
+            <div class="nav-desc">Manage products, stock & prices</div>
+          </div>
+        </div>
+
+        <div class="drawer-nav-item" data-view="customers" onclick="posApp.switchView('customers'); posApp.toggleMobileDrawer(false);">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <div>
+            <div class="nav-title">Customers Directory</div>
+            <div class="nav-desc">Customer profiles & bill assignment</div>
+          </div>
+        </div>
+
+        <div class="drawer-nav-item" data-view="inventory" onclick="posApp.switchView('inventory'); posApp.toggleMobileDrawer(false);">
+          <svg viewBox="0 0 24 24"><path d="M20 13H4c-.55 0-1 .45-1 1v6c0 .55.45 1 1 1h16c.55 0 1-.45 1-1v-6c0-.55-.45-1-1-1zM4 3h16c.55 0 1 .45 1 1v6c0 .55-.45 1-1 1H4c-.55 0-1-.45-1-1V4c0-.55.45-1 1-1z"/></svg>
+          <div>
+            <div class="nav-title">Stock Inventory Audit</div>
+            <div class="nav-desc">Low stock alerts & stock counts</div>
+          </div>
+        </div>
+
+        <div class="drawer-nav-item" data-view="reports" onclick="posApp.switchView('reports'); posApp.toggleMobileDrawer(false);">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2v-4h2v4zm4 0h-2v-10h2v10z"/></svg>
+          <div>
+            <div class="nav-title">Sales & Invoice History Logs</div>
+            <div class="nav-desc">View invoices, receipts & totals</div>
+          </div>
+        </div>
+
+        <div class="drawer-nav-item" data-view="settings" onclick="posApp.switchView('settings'); posApp.toggleMobileDrawer(false);">
+          <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+          <div>
+            <div class="nav-title">Branding & Settings</div>
+            <div class="nav-desc">UPI QR, Store info & Logo</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mobile-drawer-footer">
+        <button class="btn-pos btn-secondary" onclick="posApp.toggleTheme(); posApp.toggleMobileDrawer(false);">🌓 Theme</button>
+        <button class="btn-pos btn-secondary" onclick="posApp.openHeldBillsModal(); posApp.toggleMobileDrawer(false);">📋 Held Bills</button>
+        <button class="btn-pos btn-secondary" onclick="posApp.openCameraScanner(); posApp.toggleMobileDrawer(false);">📷 Camera</button>
+      </div>
+    </div>
+  </div>
 
   <!-- ==================== MOBILE CAMERA SCANNER OVERLAY ==================== -->
   <div class="camera-modal-overlay" id="cameraScannerModal">
