@@ -203,8 +203,9 @@ class POSController {
     this.switchView('billing');
     this.renderCart();
     this.updateProductCountBadge();
+    this.updateSubscriptionBadgeUI();
 
-    console.log('POS Billing System Initialized with Dynamic Offline UPI Payment QR Engine.');
+    console.log('POS Billing System Initialized with Subscription & Super Admin License Integration.');
   }
 
   // --- MENU BAR & VIEW SWITCHER ---
@@ -1300,6 +1301,114 @@ class POSController {
     }
   }
 
+  // --- SUBSCRIPTION & LICENSE CONNECTOR ENGINE ---
+  updateSubscriptionBadgeUI() {
+    const sub = window.posStorage.getSubscription();
+    const expiresDate = new Date(sub.expiresAt);
+    const now = new Date();
+    const diffTime = expiresDate - now;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    const badgeText = document.getElementById('hdrSubText');
+    const badgeDot = document.getElementById('hdrSubDot');
+    const badgeContainer = document.getElementById('hdrSubBadge');
+
+    if (diffDays <= 0 || sub.status === 'Expired' || sub.status === 'Suspended') {
+      if (badgeText) badgeText.textContent = 'Expired (Renew)';
+      if (badgeDot) badgeDot.style.background = 'var(--accent-danger)';
+      if (badgeContainer) {
+        badgeContainer.style.background = 'rgba(239,68,68,0.15)';
+        badgeContainer.style.borderColor = 'rgba(239,68,68,0.3)';
+        badgeContainer.style.color = 'var(--accent-danger)';
+      }
+    } else {
+      const planShort = sub.planName.replace(' Plan', '');
+      if (badgeText) badgeText.textContent = `${planShort} (${diffDays}d)`;
+      if (badgeDot) badgeDot.style.background = 'var(--accent-success)';
+      if (badgeContainer) {
+        badgeContainer.style.background = 'rgba(34,197,94,0.15)';
+        badgeContainer.style.borderColor = 'rgba(34,197,94,0.3)';
+        badgeContainer.style.color = 'var(--accent-success)';
+      }
+    }
+  }
+
+  openSubscriptionModal() {
+    const sub = window.posStorage.getSubscription();
+    const expiresDate = new Date(sub.expiresAt);
+    const dateStr = expiresDate.toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' });
+
+    const planNameEl = document.getElementById('subModalPlanName');
+    if (planNameEl) planNameEl.textContent = sub.planName;
+
+    const statusBadgeEl = document.getElementById('subModalStatusBadge');
+    if (statusBadgeEl) {
+      if (sub.status === 'Active') {
+        statusBadgeEl.innerHTML = '🟢 Active';
+        statusBadgeEl.style.background = 'rgba(34,197,94,0.15)';
+        statusBadgeEl.style.color = 'var(--accent-success)';
+      } else if (sub.status === 'Trial') {
+        statusBadgeEl.innerHTML = '⏳ Trial Active';
+        statusBadgeEl.style.background = 'rgba(59,130,246,0.15)';
+        statusBadgeEl.style.color = 'var(--accent-primary)';
+      } else {
+        statusBadgeEl.innerHTML = '🔴 Expired';
+        statusBadgeEl.style.background = 'rgba(239,68,68,0.15)';
+        statusBadgeEl.style.color = 'var(--accent-danger)';
+      }
+    }
+
+    const expEl = document.getElementById('subModalExpiresAt');
+    if (expEl) expEl.textContent = dateStr;
+
+    const devEl = document.getElementById('subModalMaxDevices');
+    if (devEl) devEl.textContent = `${sub.maxDevices} POS Terminals`;
+
+    const cycleEl = document.getElementById('subModalCycle');
+    if (cycleEl) cycleEl.textContent = sub.billingCycle || 'Annual Plan';
+
+    const keyStatusEl = document.getElementById('subModalKeyStatus');
+    if (keyStatusEl) keyStatusEl.textContent = `Verified 🟢 (${sub.licenseKey})`;
+
+    this.openModal('subscriptionModal');
+  }
+
+  activateLicenseKeySubmit() {
+    const inputKey = (document.getElementById('inputLicenseKey')?.value || '').trim().toUpperCase();
+    if (!inputKey) {
+      alert('Please enter a valid License Key.');
+      return;
+    }
+
+    let matchedMaxDevices = 5;
+    let matchedPlan = 'Standard Retail Plan';
+
+    if (window.SuperAdminDB) {
+      const licenses = window.SuperAdminDB.getLicenses();
+      const targetLic = licenses.find(l => l.licenseKey.toUpperCase() === inputKey);
+      if (targetLic) {
+        matchedMaxDevices = targetLic.maxDevices || 5;
+      }
+    }
+
+    const newExpires = new Date(Date.now() + 365 * 86400000).toISOString();
+    const updatedSub = {
+      licenseKey: inputKey,
+      planName: matchedPlan,
+      status: 'Active',
+      billingCycle: 'Annual Plan',
+      expiresAt: newExpires,
+      maxDevices: matchedMaxDevices,
+      activatedAt: new Date().toISOString()
+    };
+
+    window.posStorage.saveSubscription(updatedSub);
+    this.updateSubscriptionBadgeUI();
+    this.closeModal('subscriptionModal');
+    window.posAudio.playSuccess();
+    this.flashBannerSuccess(`License Key Activated! Active until ${new Date(newExpires).toLocaleDateString()}`);
+  }
+
   // --- MODAL CONTROLLERS ---
   showNotFoundModal(barcode) {
     document.getElementById('notFoundBarcodeVal').textContent = barcode;
@@ -1579,10 +1688,24 @@ class POSController {
   }
 
   updateCustomerUI() {
+    const custName = this.activeCustomer ? this.activeCustomer.name : 'Walk-in Customer';
+    const custPhone = this.activeCustomer ? this.activeCustomer.phone : 'N/A';
+
     const nameEl = document.getElementById('selectedCustName');
-    if (nameEl) nameEl.textContent = `👤 ${this.activeCustomer.name}`;
+    if (nameEl) nameEl.textContent = `👤 ${custName}`;
     const phoneEl = document.getElementById('selectedCustPhone');
-    if (phoneEl) phoneEl.textContent = `Phone: ${this.activeCustomer.phone}`;
+    if (phoneEl) phoneEl.textContent = `Phone: ${custPhone}`;
+
+    const mNameEl = document.getElementById('mSelectedCustName');
+    if (mNameEl) mNameEl.textContent = custName;
+    const mPhoneEl = document.getElementById('mSelectedCustPhone');
+    if (mPhoneEl) mPhoneEl.textContent = (custPhone && custPhone !== 'N/A') ? `📱 ${custPhone}` : 'Standard Retail Sale';
+
+    const mStickyCust = document.getElementById('mStickyCustName');
+    if (mStickyCust) mStickyCust.textContent = custName.length > 12 ? custName.slice(0, 10) + '…' : custName;
+
+    const payCustName = document.getElementById('payModalCustName');
+    if (payCustName) payCustName.textContent = custName;
   }
 
   // --- ENHANCED MULTI-FORMAT INVOICE RENDER ENGINE WITH UPI QR ---
@@ -1610,14 +1733,30 @@ class POSController {
 
   switchReceiptFormat(format) {
     this.currentReceiptFormat = format;
+    this.updateReceiptFormatButtons(format);
     if (this.activeReceiptSale) {
       this.renderReceipt(this.activeReceiptSale, format);
     }
   }
 
+  updateReceiptFormatButtons(format) {
+    const formats = ['80mm', '58mm', 'a4'];
+    formats.forEach(fmt => {
+      const btn = document.getElementById(`btnFormat${fmt.charAt(0).toUpperCase() + fmt.slice(1)}`);
+      if (btn) {
+        if (fmt.toLowerCase() === format.toLowerCase()) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      }
+    });
+  }
+
   async renderReceipt(sale, format = '80mm') {
     this.activeReceiptSale = sale;
     this.currentReceiptFormat = format;
+    this.updateReceiptFormatButtons(format);
     const printArea = document.getElementById('receiptPrintArea');
     const previewContainer = document.getElementById('receiptPreviewContent');
 
@@ -1629,38 +1768,98 @@ class POSController {
     // 1. Store Logo HTML
     const logoHtml = settings.logoBase64
       ? `<img src="${settings.logoBase64}" class="inv-logo-img" alt="Store Logo">`
-      : `<div style="font-size:32px;">🏪</div>`;
+      : `<div style="font-size:28px;">🏪</div>`;
 
-    // 2. Generate Dynamic Offline UPI QR Code Image for Invoice using Official QRCode service
+    // 2. Generate Dynamic Offline UPI QR Code Image for Invoice
     let upiQrSvg = '';
+    const qrSize = format === '58mm' ? 110 : format === '80mm' ? 130 : 150;
     try {
       const qrRes = await window.UPIQRService.generateQR(null, {
         upiId: settings.upiId || 'merchant@okaxis',
         merchantName: settings.merchantName || settings.storeName || 'ABC Super Market',
         amount: sale.totals.grandTotal,
         invoiceNo: sale.id
-      }, { size: 160 });
+      }, { size: qrSize });
       if (qrRes.success) upiQrSvg = qrRes.svg;
     } catch (e) {
       console.warn('Invoice QR generation warning:', e);
     }
 
-    // 3. Product Table Rows HTML (# Column included)
+    // 3. Dynamic Product Table Head & Rows tailored per format (58mm, 80mm, A4)
+    let tableHeadHtml = '';
     let itemRows = '';
-    sale.items.forEach((item, index) => {
-      itemRows += `
+
+    if (format === '58mm') {
+      // 58mm Thermal Roll: Ultra-compact 4 columns (Item, Qty, Rate, Total)
+      tableHeadHtml = `
         <tr>
-          <td>${index + 1}</td>
-          <td><b>${item.name}</b></td>
-          <td style="font-family:var(--font-mono); font-size:10px;">${item.barcode}</td>
-          <td style="text-align:center;">${item.quantity}</td>
-          <td style="text-align:right;">₹${item.price.toFixed(2)}</td>
-          <td style="text-align:right;">${item.discountPercent}%</td>
-          <td style="text-align:right;">${item.gstPercent}%</td>
-          <td style="text-align:right; font-weight:bold;">₹${item.lineTotal.toFixed(2)}</td>
+          <th style="text-align:left;">Item</th>
+          <th style="text-align:center;">Qty</th>
+          <th style="text-align:right;">Rate</th>
+          <th style="text-align:right;">Total</th>
         </tr>
       `;
-    });
+      sale.items.forEach((item) => {
+        itemRows += `
+          <tr>
+            <td style="text-align:left;"><b>${item.name}</b></td>
+            <td style="text-align:center;">${item.quantity}</td>
+            <td style="text-align:right;">₹${item.price.toFixed(0)}</td>
+            <td style="text-align:right; font-weight:bold;">₹${item.lineTotal.toFixed(0)}</td>
+          </tr>
+        `;
+      });
+    } else if (format === '80mm') {
+      // 80mm Thermal Roll: 5 columns (No, Item, Qty, Rate, Line Total)
+      tableHeadHtml = `
+        <tr>
+          <th>#</th>
+          <th>Item Description</th>
+          <th style="text-align:center;">Qty</th>
+          <th style="text-align:right;">Price</th>
+          <th style="text-align:right;">Total</th>
+        </tr>
+      `;
+      sale.items.forEach((item, index) => {
+        itemRows += `
+          <tr>
+            <td>${index + 1}</td>
+            <td><b>${item.name}</b>${item.barcode ? `<br><small style="color:#64748b; font-size:9px;">${item.barcode}</small>` : ''}</td>
+            <td style="text-align:center;">${item.quantity}</td>
+            <td style="text-align:right;">₹${item.price.toFixed(2)}</td>
+            <td style="text-align:right; font-weight:bold;">₹${item.lineTotal.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    } else {
+      // A4 Page: Full 8-column Corporate GST Tax Invoice
+      tableHeadHtml = `
+        <tr>
+          <th>#</th>
+          <th>Product Name</th>
+          <th>Barcode</th>
+          <th style="text-align:center;">Qty</th>
+          <th style="text-align:right;">Price</th>
+          <th style="text-align:right;">Disc</th>
+          <th style="text-align:right;">GST</th>
+          <th style="text-align:right;">Total</th>
+        </tr>
+      `;
+      sale.items.forEach((item, index) => {
+        itemRows += `
+          <tr>
+            <td>${index + 1}</td>
+            <td><b>${item.name}</b></td>
+            <td style="font-family:var(--font-mono); font-size:10px;">${item.barcode}</td>
+            <td style="text-align:center;">${item.quantity}</td>
+            <td style="text-align:right;">₹${item.price.toFixed(2)}</td>
+            <td style="text-align:right;">${item.discountPercent}%</td>
+            <td style="text-align:right;">${item.gstPercent}%</td>
+            <td style="text-align:right; font-weight:bold;">₹${item.lineTotal.toFixed(2)}</td>
+          </tr>
+        `;
+      });
+    }
 
     // 4. Scannable Invoice Barcode SVG
     const barcodeSvg = window.BarcodeScannerManager.generateBarcodeSVG(sale.id);
@@ -1703,24 +1902,17 @@ class POSController {
           </div>
         </div>
 
-        <!-- PRODUCT TABLE -->
-        <table class="inv-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Product Name</th>
-              <th>Barcode</th>
-              <th style="text-align:center;">Qty</th>
-              <th style="text-align:right;">Price</th>
-              <th style="text-align:right;">Disc</th>
-              <th style="text-align:right;">GST</th>
-              <th style="text-align:right;">Total</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemRows}
-          </tbody>
-        </table>
+        <!-- PRODUCT TABLE WITH RESPONSIVE WRAPPER -->
+        <div class="inv-table-wrapper">
+          <table class="inv-table">
+            <thead>
+              ${tableHeadHtml}
+            </thead>
+            <tbody>
+              ${itemRows}
+            </tbody>
+          </table>
+        </div>
 
         <!-- TOTALS SUMMARY BOX -->
         <div class="inv-totals-box">
@@ -1731,13 +1923,13 @@ class POSController {
         </div>
 
         <!-- INVOICE DYNAMIC UPI PAYMENT QR BOX -->
-        <div style="background:#f8fafc; border:1px solid #cbd5e1; border-radius:8px; padding:10px; margin-bottom:14px; text-align:center; display:flex; align-items:center; justify-content:space-around; gap:10px;">
-          <div>
+        <div class="inv-upi-box">
+          <div class="inv-upi-qr-col">
             ${upiQrSvg}
             <div style="font-size:10px; font-weight:bold; margin-top:4px; color:#0f172a;">Scan & Pay using any UPI App</div>
             <div style="font-size:8px; color:#64748b;">(Google Pay, PhonePe, Paytm, BHIM, Amazon Pay)</div>
           </div>
-          <div style="text-align:left; font-size:10px; color:#334155;">
+          <div class="inv-upi-info-col">
             <b>Payable UPI ID:</b> ${settings.upiId || 'abcstore@okaxis'}<br>
             <b>Merchant:</b> ${settings.merchantName || settings.storeName || 'ABC Super Market'}<br>
             <b>City:</b> ${settings.merchantCity || 'Chennai'}<br>

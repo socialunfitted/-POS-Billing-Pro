@@ -59,6 +59,7 @@
 
     <div style="font-size:11px; color:var(--text-muted); text-align:center; border-top:1px solid var(--border-color); padding-top:12px;">
       Offline Ready 🟢
+      <a href="super-admin/index.html" target="_blank" style="color:var(--accent-primary); text-decoration:none; display:block; margin-top:6px; font-weight:700;">⚡ Super Admin Portal</a>
     </div>
   </aside>
 
@@ -87,6 +88,11 @@
           <span id="dbProductCountBadge">Loading...</span>
         </div>
 
+        <div class="status-badge" id="hdrSubBadge" onclick="posApp.openSubscriptionModal()" title="View Subscription Details & License Key" style="display:flex; align-items:center; gap:6px; background:rgba(34,197,94,0.15); border:1px solid rgba(34,197,94,0.3); color:var(--accent-success); padding:4px 10px; border-radius:20px; font-size:11px; cursor:pointer;">
+          <span style="width:8px; height:8px; border-radius:50%; background:var(--accent-success);" id="hdrSubDot"></span>
+          <span id="hdrSubText" style="font-weight:700;">Standard Plan</span>
+        </div>
+
         <button class="icon-btn" onclick="posApp.seed100kProducts()" title="Seed 100,000 Sample Items" id="btnSeed100k" style="width:auto; padding:0 10px; font-size:12px; font-weight:700;">
           ⚡ 100k Demo
         </button>
@@ -110,6 +116,20 @@
         <span class="barcode-format-tag" id="barcodeFormatTag">EAN-13 / CODE 128</span>
         <button class="btn-pos btn-secondary" onclick="posApp.openCameraScanner()" style="padding:6px 12px; font-size:12px;">📷 Camera Scan</button>
         <button class="btn-pos btn-primary" onclick="posApp.openSearchModal()" style="padding:6px 12px; font-size:12px;">Search [F2]</button>
+      </div>
+
+      <!-- MOBILE CUSTOMER SELECTOR BAR -->
+      <div class="mobile-customer-bar" onclick="posApp.openCustomerModal()" title="Select or Add Customer (F7)">
+        <div class="m-cust-details">
+          <span class="m-cust-avatar">👤</span>
+          <div>
+            <div class="m-cust-title" id="mSelectedCustName">Walk-in Customer</div>
+            <div class="m-cust-subtitle" id="mSelectedCustPhone">Standard Retail Sale</div>
+          </div>
+        </div>
+        <button class="btn-pos btn-secondary" style="padding:4px 10px; font-size:11px; color:var(--accent-primary); pointer-events:none;">
+          + Customer
+        </button>
       </div>
 
       <div class="workspace-grid">
@@ -407,11 +427,16 @@
 
   <!-- ==================== MOBILE STICKY SUMMARY & NAVIGATION ==================== -->
   <div class="mobile-sticky-summary" id="mobileStickySummary">
-    <div>
-      <div style="font-size:11px; color:var(--text-muted);">Total: <span id="mStickySubtotal">₹0.00</span></div>
-      <div style="font-size:18px; font-weight:800; color:var(--accent-success);" id="mStickyGrandTotal">₹0.00</div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button class="m-sticky-cust-btn" onclick="posApp.openCustomerModal()" title="Add or Change Customer">
+        👤 <span id="mStickyCustName">Customer</span>
+      </button>
+      <div>
+        <div style="font-size:10px; color:var(--text-muted);">Total: <span id="mStickySubtotal">₹0.00</span></div>
+        <div style="font-size:17px; font-weight:800; color:var(--accent-success);" id="mStickyGrandTotal">₹0.00</div>
+      </div>
     </div>
-    <button class="btn-pos btn-success" style="padding:10px 18px; font-size:14px;" onclick="posApp.openPaymentModal()">
+    <button class="btn-pos btn-success" style="padding:10px 16px; font-size:13px;" onclick="posApp.openPaymentModal()">
       Checkout [F4]
     </button>
   </div>
@@ -852,22 +877,78 @@
 
   <!-- 7. ENHANCED RECEIPT PREVIEW MODAL WITH FORMAT SWITCHER -->
   <div class="modal-overlay" id="receiptPreviewModal">
-    <div class="modal-box" style="max-width:650px;">
-      <div class="modal-header">
-        <div class="modal-title">📄 Invoice Preview & Print Engine</div>
-        <div style="display:flex; gap:6px;">
-          <button class="btn-pos btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="posApp.switchReceiptFormat('80mm')">80mm Thermal</button>
-          <button class="btn-pos btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="posApp.switchReceiptFormat('58mm')">58mm Thermal</button>
-          <button class="btn-pos btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="posApp.switchReceiptFormat('a4')">A4 Page</button>
-          <button class="icon-btn" onclick="posApp.closeModal('receiptPreviewModal')">✕</button>
+    <div class="modal-box receipt-preview-modal-box">
+      <div class="modal-header receipt-modal-header">
+        <div class="receipt-header-top">
+          <div class="modal-title">📄 Invoice Preview & Print Engine</div>
+          <button class="icon-btn" onclick="posApp.closeModal('receiptPreviewModal')" aria-label="Close">✕</button>
+        </div>
+        <div class="receipt-format-switcher">
+          <button class="format-btn active" id="btnFormat80mm" onclick="posApp.switchReceiptFormat('80mm')">80mm Thermal</button>
+          <button class="format-btn" id="btnFormat58mm" onclick="posApp.switchReceiptFormat('58mm')">58mm Thermal</button>
+          <button class="format-btn" id="btnFormatA4" onclick="posApp.switchReceiptFormat('a4')">A4 Page</button>
         </div>
       </div>
-      <div class="modal-body" style="background:#f1f5f9; color:#000; padding:16px;" id="receiptPreviewContent">
+      <div class="modal-body receipt-modal-body" id="receiptPreviewContent">
         <!-- Injected dynamically -->
       </div>
-      <div class="modal-footer">
+      <div class="modal-footer receipt-modal-footer">
         <button class="btn-pos btn-secondary" onclick="posApp.closeModal('receiptPreviewModal')">Close</button>
-        <button class="btn-pos btn-primary" onclick="window.print();">🖨️ Print / Export PDF</button>
+        <button class="btn-pos btn-primary print-action-btn" onclick="window.print();">🖨️ Print / Export PDF</button>
+      </div>
+    </div>
+  </div>
+  <!-- 8. SUBSCRIPTION & LICENSE MANAGER MODAL -->
+  <div class="modal-overlay" id="subscriptionModal">
+    <div class="modal-box" style="max-width:560px;">
+      <div class="modal-header">
+        <div class="modal-title">⚡ Store Subscription & License Manager</div>
+        <button class="icon-btn" onclick="posApp.closeModal('subscriptionModal')">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- CURRENT SUBSCRIPTION CARD -->
+        <div style="background:var(--bg-input); border:1px solid var(--border-color); padding:16px; border-radius:var(--radius-md); display:flex; flex-direction:column; gap:8px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:11px; color:var(--text-muted); font-weight:700;">CURRENT POS SUBSCRIPTION</div>
+              <div style="font-size:18px; font-weight:800; color:var(--accent-primary);" id="subModalPlanName">Standard Retail Plan</div>
+            </div>
+            <span class="badge" id="subModalStatusBadge" style="background:rgba(34,197,94,0.15); color:var(--accent-success); border:1px solid rgba(34,197,94,0.3); font-size:12px; padding:4px 10px;">🟢 Active</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:6px; font-size:12px;">
+            <div><span style="color:var(--text-muted);">Expiration Date:</span><br><b id="subModalExpiresAt">2027-06-30</b></div>
+            <div><span style="color:var(--text-muted);">Allowed Devices:</span><br><b id="subModalMaxDevices">3 POS Terminals</b></div>
+            <div><span style="color:var(--text-muted);">Billing Cycle:</span><br><b id="subModalCycle">Annual Plan</b></div>
+            <div><span style="color:var(--text-muted);">Hardware License:</span><br><b id="subModalKeyStatus" style="color:var(--accent-success);">Verified 🟢</b></div>
+          </div>
+        </div>
+
+        <!-- ACTIVATE NEW LICENSE KEY SECTION -->
+        <div style="background:var(--bg-input); border:1px solid var(--border-color); padding:16px; border-radius:var(--radius-md); display:flex; flex-direction:column; gap:10px; margin-top:4px;">
+          <label class="form-label" style="color:var(--accent-primary); font-weight:700;">🔑 Activate Super Admin License Key</label>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="inputLicenseKey" class="form-control font-mono" placeholder="POS-APEX-9988-7766-1011" style="font-size:13px; text-transform:uppercase;">
+            <button class="btn-pos btn-primary" onclick="posApp.activateLicenseKeySubmit()" style="white-space:nowrap;">Activate Key</button>
+          </div>
+          <div style="font-size:11px; color:var(--text-muted);">
+            Enter the license key issued by Super Admin to instantly activate or extend your store offline.
+          </div>
+        </div>
+
+        <!-- ONLINE RENEWAL VIA UPI QR -->
+        <div style="background:var(--bg-input); border:1px solid var(--border-color); padding:16px; border-radius:var(--radius-md); text-align:center; display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+          <div style="font-weight:700; font-size:13px;">💳 Instant Online Renewal via UPI QR</div>
+          <div style="font-size:11px; color:var(--text-muted);">Scan QR code to pay standard renewal fee & auto-extend license</div>
+          <button class="btn-pos btn-secondary" onclick="posApp.openPaymentModal(); posApp.closeModal('subscriptionModal');" style="width:100%; justify-content:center;">
+            📱 Pay Renewal via UPI / Card
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-pos btn-secondary" onclick="posApp.closeModal('subscriptionModal')">Close</button>
       </div>
     </div>
   </div>

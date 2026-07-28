@@ -138,6 +138,43 @@ class POSStorage {
       return [];
     }
   }
+
+  // --- SUBSCRIPTION & LICENSE MANAGEMENT ---
+  getSubscription() {
+    try {
+      const data = localStorage.getItem('pos_subscription');
+      const defaults = {
+        licenseKey: 'POS-APEX-9988-7766-1011',
+        planName: 'Standard Retail Plan',
+        status: 'Active',
+        billingCycle: 'Annual Plan',
+        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+        maxDevices: 3,
+        activatedAt: new Date().toISOString()
+      };
+      return data ? { ...defaults, ...JSON.parse(data) } : defaults;
+    } catch (e) {
+      return {
+        licenseKey: 'POS-APEX-9988-7766-1011',
+        planName: 'Standard Retail Plan',
+        status: 'Active',
+        billingCycle: 'Annual Plan',
+        expiresAt: new Date(Date.now() + 30 * 86400000).toISOString(),
+        maxDevices: 3,
+        activatedAt: new Date().toISOString()
+      };
+    }
+  }
+
+  saveSubscription(subObj) {
+    try {
+      const current = this.getSubscription();
+      const updated = { ...current, ...subObj };
+      localStorage.setItem('pos_subscription', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('LocalStorage saveSubscription error:', e);
+    }
+  }
 }
 
 // Global Export Singleton

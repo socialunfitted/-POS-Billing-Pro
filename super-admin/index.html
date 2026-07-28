@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Super Admin Subscription Management Panel - POS Billing System</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body data-admin-theme="dark">
+
+  <!-- ==================== SUPER ADMIN AUTH CONTAINER (LOGIN) ==================== -->
+  <div class="auth-wrapper" id="adminAuthContainer">
+    <!-- Injected dynamically by admin-app.js -->
+  </div>
+
+  <!-- ==================== MAIN SUPER ADMIN APPLICATION SHELL ==================== -->
+  <div class="admin-wrapper" id="adminMainContainer" style="display:none;">
+
+    <!-- FIXED SIDEBAR NAVIGATION -->
+    <aside class="admin-sidebar" id="adminSidebar">
+      <div>
+        <div class="sidebar-brand">
+          <div class="auth-logo-icon" style="width:36px; height:36px; font-size:18px;">⚡</div>
+          <div>
+            <div class="brand-text">POS Super Admin</div>
+            <div class="brand-badge">SaaS Control Panel</div>
+          </div>
+        </div>
+
+        <nav class="sidebar-menu">
+          <a href="#/dashboard" class="menu-item active">
+            <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+            Dashboard
+          </a>
+
+          <a href="#/businesses" class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12zM6 19H4v-2h2v2zm0-4H4v-2h2v2zm0-4H4V9h2v2zm0-4H4V5h2v2zm4 12H8v-2h2v2zm0-4H8v-2h2v2zm0-4H8V9h2v2zm0-4H8V5h2v2zm10 12h-8v-2h2v-2h-2v-2h2v-2h-2V9h8v10z"/></svg>
+            Businesses
+          </a>
+
+          <a href="#/subscriptions" class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+            Subscriptions
+          </a>
+
+          <a href="#/plans" class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg>
+            Pricing Plans
+          </a>
+
+          <a href="#/payments" class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+            Payments Queue
+          </a>
+
+          <a href="#/licenses" class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+            Licenses & Devices
+          </a>
+
+          <a href="#/reports" class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2v-4h2v4zm4 0h-2v-10h2v10z"/></svg>
+            Revenue Analytics
+          </a>
+
+          <a href="#/notifications" class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+            Notifications
+          </a>
+
+          <a href="#/audit-log" class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            Security Audit Log
+          </a>
+
+          <a href="#/settings" class="menu-item">
+            <svg viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
+            Settings & Supabase
+          </a>
+        </nav>
+      </div>
+
+      <div class="sidebar-user">
+        <div class="user-info">
+          <div class="user-avatar">SA</div>
+          <div>
+            <div style="font-size:12px; font-weight:700; color:#fff;">Chief Admin</div>
+            <div style="font-size:10px; color:var(--admin-text-muted);">super_admin</div>
+          </div>
+        </div>
+        <button class="btn-admin btn-secondary" onclick="SuperAdminAuth.logout()" style="padding:6px 10px; font-size:11px;" title="Logout Admin">
+          🚪
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN BODY RIGHT AREA -->
+    <div class="admin-main">
+
+      <!-- TOP NAVBAR -->
+      <header class="admin-navbar">
+        <div class="navbar-left">
+          <button class="nav-toggle-btn" onclick="document.getElementById('adminSidebar').classList.toggle('active')">☰</button>
+          <div class="nav-page-title" id="navPageTitle">Executive Subscription Dashboard</div>
+        </div>
+
+        <div class="navbar-actions">
+          <div class="global-search-bar">
+            <span>🔍</span>
+            <input type="text" placeholder="Search Business, Phone, Email, License, Invoice..." onkeyup="if(event.key==='Enter') adminApp.showToast('Searching system data for: ' + this.value)">
+          </div>
+
+          <button class="btn-admin btn-secondary" onclick="adminApp.toggleTheme()" style="padding:8px 12px;">🌓 Mode</button>
+        </div>
+      </header>
+
+      <!-- CONTENT CONTAINER -->
+      <main class="admin-content" id="adminContentBody">
+        <!-- Injected dynamically by admin-app.js based on hash route -->
+      </main>
+
+    </div>
+  </div>
+
+  <!-- MODAL CONTAINER -->
+  <div class="admin-modal-overlay" id="adminModalOverlay">
+    <div class="admin-modal-box" id="adminModalBox">
+      <!-- Dynamic Modal Content -->
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div class="toast-container" id="adminToastContainer"></div>
+
+  <!-- JAVASCRIPT CONTROLLERS -->
+  <script src="admin-auth.js"></script>
+  <script src="admin-db.js"></script>
+  <script src="admin-app.js"></script>
+</body>
+</html>
