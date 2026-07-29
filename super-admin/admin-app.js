@@ -1,21 +1,26 @@
 /**
  * ============================================================
  * SUPER ADMIN DASHBOARD APPLICATION CONTROLLER (admin-app.js)
- * SPA Router, KPI Analytics, Views Renderer, Modals & CSV Exporter
+ * Comprehensive Subscriptions Manager, Multi-Filter Search,
+ * Atomic Modals, Live KPIs, Realtime Broadcaster & CSV Exporter
  * ============================================================
  */
 class SuperAdminApp {
   constructor() {
     this.currentRoute = '#/dashboard';
-    this.activeFilter = 'All';
-    this.searchQuery = '';
+    this.subFilter = 'All';
+    this.subSearchQuery = '';
+    this.bizSearchQuery = '';
   }
 
   init() {
     window.addEventListener('hashchange', () => this.handleRoute());
     this.setupTheme();
+    ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(evt => {
+      document.addEventListener(evt, () => this.updateAdminFullscreenUI());
+    });
     this.handleRoute();
-    console.log('Super Admin Subscription Management Panel Initialized.');
+    console.log('Super Admin Subscription Control Engine Initialized.');
   }
 
   setupTheme() {
@@ -31,8 +36,45 @@ class SuperAdminApp {
     this.showToast(`Theme switched to ${nxt.toUpperCase()} mode`);
   }
 
+  toggleFullscreen() {
+    if (!document.fullscreenElement && !document.mozFullScreenElement && !document.webkitFullscreenElement && !document.msFullscreenElement) {
+      const docEl = document.documentElement;
+      if (docEl.requestFullscreen) {
+        docEl.requestFullscreen().catch(err => console.log('Fullscreen error:', err));
+      } else if (docEl.mozRequestFullScreen) {
+        docEl.mozRequestFullScreen();
+      } else if (docEl.webkitRequestFullscreen) {
+        docEl.webkitRequestFullscreen();
+      } else if (docEl.msRequestFullscreen) {
+        docEl.msRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(err => console.log('Exit fullscreen error:', err));
+      } else if (document.mozCancelFullScreen) {
+        document.mozCancelFullScreen();
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
+    }
+  }
+
+  updateAdminFullscreenUI() {
+    const isFS = !!(document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement);
+    const btnText = document.getElementById('btnAdminFullscreenText');
+    const btn = document.getElementById('btnAdminFullscreen');
+    if (btnText) {
+      btnText.textContent = isFS ? 'Exit Full Screen' : 'Full Screen';
+    }
+    if (btn) {
+      btn.title = isFS ? 'Exit Full Screen' : 'Toggle Full Screen';
+    }
+  }
+
   /**
-   * Router Handling with Route Guard
+   * Router Handling with Authorization Check
    */
   handleRoute() {
     const hash = window.location.hash || '#/dashboard';
@@ -51,7 +93,7 @@ class SuperAdminApp {
     if (authContainer) authContainer.style.display = 'none';
     if (mainContainer) mainContainer.style.display = 'flex';
 
-    // Highlight menu active state
+    // Highlight active menu item
     document.querySelectorAll('.menu-item').forEach(el => {
       const targetRoute = el.getAttribute('href');
       el.classList.toggle('active', targetRoute === hash);
@@ -60,7 +102,7 @@ class SuperAdminApp {
     const routeTitleMap = {
       '#/dashboard': 'Executive Subscription Dashboard',
       '#/businesses': 'Business Directory & Accounts',
-      '#/subscriptions': 'Subscription Lifecycle Manager',
+      '#/subscriptions': 'Subscriptions Master Control Panel',
       '#/plans': 'Plan Catalog & Pricing Matrix',
       '#/payments': 'Payment Verification & Billing Queue',
       '#/licenses': 'License Key & Device Management',
@@ -160,7 +202,7 @@ class SuperAdminApp {
         <div class="kpi-card">
           <div class="kpi-title">TOTAL BUSINESSES</div>
           <div class="kpi-val">${businesses.length}</div>
-          <div class="kpi-sub">🏢 Registered POS Accounts</div>
+          <div class="kpi-sub">🏢 Registered Accounts</div>
         </div>
 
         <div class="kpi-card">
@@ -172,7 +214,7 @@ class SuperAdminApp {
         <div class="kpi-card">
           <div class="kpi-title">TRIAL USERS</div>
           <div class="kpi-val" style="color:var(--admin-primary);">${trialCount}</div>
-          <div class="kpi-sub">⏳ 14-Day Active Trials</div>
+          <div class="kpi-sub">⏳ Active Trials</div>
         </div>
 
         <div class="kpi-card">
@@ -184,66 +226,26 @@ class SuperAdminApp {
         <div class="kpi-card">
           <div class="kpi-title">TOTAL REVENUE</div>
           <div class="kpi-val" style="color:var(--admin-purple);">₹${totalRevenue.toLocaleString()}</div>
-          <div class="kpi-sub">💰 Verified Payment Collections</div>
+          <div class="kpi-sub">💰 Verified Payments</div>
         </div>
 
         <div class="kpi-card">
-          <div class="kpi-title">PENDING VERIFICATIONS</div>
+          <div class="kpi-title">PENDING PAYMENTS</div>
           <div class="kpi-val" style="color:var(--admin-warning);">${pendingPayments}</div>
           <div class="kpi-sub">📥 Awaiting Approval</div>
         </div>
       </div>
 
-      <!-- CHARTS & TABLES -->
+      <!-- CHARTS -->
       <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:20px;">
         <div class="card-box">
-          <div class="box-header">
-            <div class="box-title">📊 Revenue Growth Trends</div>
-          </div>
-          <div class="chart-box">
-            <canvas id="revenueChartCanvas"></canvas>
-          </div>
+          <div class="box-header"><div class="box-title">📊 Revenue Growth Trends</div></div>
+          <div class="chart-box"><canvas id="revenueChartCanvas"></canvas></div>
         </div>
 
         <div class="card-box">
-          <div class="box-header">
-            <div class="box-title">🛍️ Plan Popularity Distribution</div>
-          </div>
-          <div class="chart-box">
-            <canvas id="planChartCanvas"></canvas>
-          </div>
-        </div>
-      </div>
-
-      <!-- LATEST REGISTRATIONS TABLE -->
-      <div class="card-box">
-        <div class="box-header">
-          <div class="box-title">📋 Recent Business Registrations</div>
-          <a href="#/businesses" class="btn-admin btn-secondary" style="font-size:12px;">View All Businesses →</a>
-        </div>
-        <div class="table-responsive">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>Business Name</th>
-                <th>Owner Name</th>
-                <th>City</th>
-                <th>Registered Date</th>
-                <th>Account Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${businesses.slice(0, 5).map(b => `
-                <tr>
-                  <td><b>${b.name}</b></td>
-                  <td>${b.ownerName}</td>
-                  <td>${b.city}</td>
-                  <td>${new Date(b.createdAt).toLocaleDateString()}</td>
-                  <td><span class="status-pill pill-${b.status.toLowerCase()}">${b.status}</span></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+          <div class="box-header"><div class="box-title">🛍️ Plan Popularity Distribution</div></div>
+          <div class="chart-box"><canvas id="planChartCanvas"></canvas></div>
         </div>
       </div>
     `;
@@ -254,66 +256,40 @@ class SuperAdminApp {
     }, 100);
   }
 
-  // --- CHARTS CANVAS RENDERERS ---
   renderRevenueChart() {
     const canvas = document.getElementById('revenueChartCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const w = canvas.width = canvas.parentElement.clientWidth;
-    const h = canvas.height = 280;
+    const h = canvas.height = 240;
 
     ctx.clearRect(0, 0, w, h);
-    
-    // Draw grid background
     ctx.strokeStyle = '#1f2937';
     ctx.lineWidth = 1;
-    for (let y = 40; y < h; y += 50) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(w, y);
-      ctx.stroke();
+    for (let y = 30; y < h; y += 40) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
     }
 
-    // Gradient Line Chart
     const grad = ctx.createLinearGradient(0, 0, 0, h);
     grad.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
     grad.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
 
     const points = [
-      {x: 20, y: h - 50},
-      {x: w * 0.2, y: h - 90},
-      {x: w * 0.4, y: h - 140},
-      {x: w * 0.6, y: h - 110},
-      {x: w * 0.8, y: h - 210},
-      {x: w - 20, y: h - 240}
+      {x: 20, y: h - 30}, {x: w * 0.25, y: h - 70}, {x: w * 0.5, y: h - 120},
+      {x: w * 0.75, y: h - 100}, {x: w - 20, y: h - 180}
     ];
 
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
-    }
-    ctx.lineTo(points[points.length - 1].x, h - 30);
-    ctx.lineTo(points[0].x, h - 30);
-    ctx.fillStyle = grad;
-    ctx.fill();
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.lineTo(points[points.length - 1].x, h - 20);
+    ctx.lineTo(points[0].x, h - 20);
+    ctx.fillStyle = grad; ctx.fill();
 
     ctx.beginPath();
     ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
-    }
-    ctx.strokeStyle = '#3b82f6';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-
-    // Draw Points
-    points.forEach(p => {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
-      ctx.fillStyle = '#60a5fa';
-      ctx.fill();
-    });
+    for (let i = 1; i < points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+    ctx.strokeStyle = '#3b82f6'; ctx.lineWidth = 3; ctx.stroke();
   }
 
   renderPlanChart() {
@@ -321,39 +297,28 @@ class SuperAdminApp {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const w = canvas.width = canvas.parentElement.clientWidth;
-    const h = canvas.height = 280;
+    const h = canvas.height = 240;
 
-    const centerX = w / 2;
-    const centerY = h / 2;
-    const radius = 80;
-
+    const centerX = w / 2, centerY = h / 2, radius = 70;
     const data = [
-      { label: 'Starter', val: 40, color: '#3b82f6' },
-      { label: 'Standard', val: 35, color: '#10b981' },
-      { label: 'Premium', val: 20, color: '#8b5cf6' },
-      { label: 'Enterprise', val: 5, color: '#f59e0b' }
+      { label: 'Starter (₹99)', val: 30, color: '#3b82f6' },
+      { label: 'Standard (₹199)', val: 45, color: '#10b981' },
+      { label: 'Premium (₹399)', val: 20, color: '#8b5cf6' },
+      { label: 'Enterprise (₹799)', val: 5, color: '#f59e0b' }
     ];
 
-    let total = 0;
-    data.forEach(d => total += d.val);
-
+    let total = 0; data.forEach(d => total += d.val);
     let startAngle = 0;
     data.forEach(d => {
       const sliceAngle = (d.val / total) * 2 * Math.PI;
       ctx.beginPath();
       ctx.arc(centerX, centerY, radius, startAngle, startAngle + sliceAngle);
-      ctx.arc(centerX, centerY, radius - 30, startAngle + sliceAngle, startAngle, true);
+      ctx.arc(centerX, centerY, radius - 25, startAngle + sliceAngle, startAngle, true);
       ctx.closePath();
       ctx.fillStyle = d.color;
       ctx.fill();
       startAngle += sliceAngle;
     });
-
-    // Donut text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('100% Active', centerX, centerY + 5);
   }
 
   // --- BUSINESSES VIEW ---
@@ -370,14 +335,6 @@ class SuperAdminApp {
           <button class="btn-admin btn-primary" onclick="adminApp.openCreateBusinessModal()">+ Create Business</button>
         </div>
 
-        <div class="filter-toolbar">
-          <div class="filter-chip active" onclick="adminApp.filterBusinesses('All', this)">All Businesses</div>
-          <div class="filter-chip" onclick="adminApp.filterBusinesses('Active', this)">Active</div>
-          <div class="filter-chip" onclick="adminApp.filterBusinesses('Trial', this)">Trial</div>
-          <div class="filter-chip" onclick="adminApp.filterBusinesses('Expired', this)">Expired</div>
-          <div class="filter-chip" onclick="adminApp.filterBusinesses('Suspended', this)">Suspended</div>
-        </div>
-
         <div class="table-responsive">
           <table class="admin-table">
             <thead>
@@ -386,12 +343,27 @@ class SuperAdminApp {
                 <th>Owner & Contact</th>
                 <th>City</th>
                 <th>Status</th>
-                <th>Registered</th>
+                <th>Registered Date</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody id="businessesTableBody">
-              ${this.renderBusinessesRows(businesses)}
+            <tbody>
+              ${businesses.map(b => `
+                <tr>
+                  <td><b>${b.name}</b><br><span style="font-size:11px; color:var(--admin-text-muted);">ID: ${b.id}</span></td>
+                  <td><b>${b.ownerName}</b><br><span style="font-size:11px; color:var(--admin-text-sub);">${b.email} • ${b.phone}</span></td>
+                  <td>${b.city || 'N/A'}</td>
+                  <td><span class="status-pill pill-${b.status.toLowerCase()}">${b.status}</span></td>
+                  <td>${new Date(b.createdAt).toLocaleDateString()}</td>
+                  <td>
+                    <div style="display:flex; gap:6px;">
+                      <button class="btn-admin btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="adminApp.openBusinessDetailsModal('${b.id}')">👁️ View Details</button>
+                      <button class="btn-admin btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="adminApp.openCustomSuspendModal('${b.id}')">⏸️ Suspend</button>
+                      <button class="btn-admin btn-success" style="padding:4px 8px; font-size:11px;" onclick="adminApp.activateBusiness('${b.id}')">▶️ Activate</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
             </tbody>
           </table>
         </div>
@@ -399,61 +371,66 @@ class SuperAdminApp {
     `;
   }
 
-  renderBusinessesRows(list) {
-    if (!list || list.length === 0) {
-      return `<tr><td colspan="6" style="text-align:center; padding:20px; color:var(--admin-text-muted);">No matching business records found.</td></tr>`;
-    }
+  openBusinessDetailsModal(bizId) {
+    const bizList = window.SuperAdminDB.getBusinesses();
+    const subList = window.SuperAdminDB.getSubscriptions();
+    const licList = window.SuperAdminDB.getLicenses();
+    const planList = window.SuperAdminDB.getPlans();
 
-    return list.map(b => `
-      <tr>
-        <td><b>${b.name}</b><br><span style="font-size:11px; color:var(--admin-text-muted);">ID: ${b.id}</span></td>
-        <td><b>${b.ownerName}</b><br><span style="font-size:11px; color:var(--admin-text-sub);">${b.email} • ${b.phone}</span></td>
-        <td>${b.city || 'N/A'}</td>
-        <td><span class="status-pill pill-${b.status.toLowerCase()}">${b.status}</span></td>
-        <td>${new Date(b.createdAt).toLocaleDateString()}</td>
-        <td>
-          <div style="display:flex; gap:6px;">
-            <button class="btn-admin btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="adminApp.toggleBusinessStatus('${b.id}')">
-              ${b.status === 'Active' ? '⏸️ Suspend' : '▶️ Activate'}
-            </button>
-            <button class="btn-admin btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="adminApp.openResetLicenseModal('${b.id}')">🔑 Reset License</button>
-            <button class="btn-admin btn-danger" style="padding:4px 8px; font-size:11px;" onclick="adminApp.deleteBusiness('${b.id}')">🗑️</button>
+    const biz = bizList.find(b => b.id === bizId);
+    const sub = subList.find(s => s.businessId === bizId) || {};
+    const lic = licList.find(l => l.businessId === bizId) || {};
+    const plan = planList.find(p => p.id === sub.planId) || { name: 'Starter POS', monthlyPrice: 99, yearlyPrice: 999 };
+
+    const modal = document.getElementById('adminModalBox');
+    if (!modal || !biz) return;
+
+    modal.innerHTML = `
+      <div class="admin-modal-header">
+        <div class="box-title">🏢 Business Profile & Embedded Subscription Card</div>
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">✕</button>
+      </div>
+
+      <div class="admin-modal-body" style="display:flex; flex-direction:column; gap:14px;">
+        <div style="background:var(--admin-card-hover); border:1px solid var(--admin-border); padding:14px; border-radius:8px; display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div><span style="color:var(--admin-text-muted); font-size:11px;">BUSINESS NAME:</span><br><b>${biz.name}</b></div>
+          <div><span style="color:var(--admin-text-muted); font-size:11px;">BUSINESS ID:</span><br><b style="font-family:monospace; color:var(--admin-primary);">${biz.id}</b></div>
+          <div><span style="color:var(--admin-text-muted); font-size:11px;">OWNER:</span><br><b>${biz.ownerName}</b></div>
+          <div><span style="color:var(--admin-text-muted); font-size:11px;">PHONE / EMAIL:</span><br><b>${biz.phone}</b> / ${biz.email}</div>
+        </div>
+
+        <!-- EMBEDDED SUBSCRIPTION CARD -->
+        <div style="background:linear-gradient(135deg, rgba(59,130,246,0.1), rgba(139,92,246,0.1)); border:1px solid var(--admin-primary); padding:16px; border-radius:10px; display:flex; flex-direction:column; gap:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-size:11px; color:var(--admin-text-sub); font-weight:700;">CURRENT POS SUBSCRIPTION CARD</div>
+              <div style="font-size:18px; font-weight:800; color:var(--admin-primary);">${plan.name}</div>
+            </div>
+            <span class="status-pill pill-${(sub.status || 'trial').toLowerCase()}">${sub.status || 'Trial'}</span>
           </div>
-        </td>
-      </tr>
-    `).join('');
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; font-size:12px;">
+            <div><span style="color:var(--admin-text-muted);">Monthly Fee:</span> <b>₹${plan.monthlyPrice}</b></div>
+            <div><span style="color:var(--admin-text-muted);">Yearly Fee:</span> <b>₹${plan.yearlyPrice}</b></div>
+            <div><span style="color:var(--admin-text-muted);">Billing Cycle:</span> <b>${sub.billingCycle || 'Monthly'}</b></div>
+            <div><span style="color:var(--admin-text-muted);">Expiration Date:</span> <b>${sub.expiresAt ? new Date(sub.expiresAt).toLocaleDateString() : 'N/A'}</b></div>
+            <div><span style="color:var(--admin-text-muted);">License Key:</span> <code style="color:var(--admin-success);">${lic.licenseKey || 'N/A'}</code></div>
+            <div><span style="color:var(--admin-text-muted);">Device Limit:</span> <b>${lic.activeDevices || 0} / ${lic.maxDevices || 3}</b></div>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-top:6px; flex-wrap:wrap;">
+            <button class="btn-admin btn-success" onclick="adminApp.closeModal(); adminApp.openCustomRenewModal('${biz.id}')">💳 Renew Subscription</button>
+            <button class="btn-admin btn-primary" onclick="adminApp.closeModal(); adminApp.openCustomUpgradeModal('${biz.id}')">⚡ Change Plan</button>
+            <button class="btn-admin btn-secondary" onclick="adminApp.closeModal(); adminApp.openCustomSuspendModal('${biz.id}')">⏸️ Suspend Account</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.openModal();
   }
 
-  filterBusinesses(status, chipElem) {
-    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-    if (chipElem) chipElem.classList.add('active');
-
-    const all = window.SuperAdminDB.getBusinesses();
-    const filtered = status === 'All' ? all : all.filter(b => b.status === status);
-    const body = document.getElementById('businessesTableBody');
-    if (body) body.innerHTML = this.renderBusinessesRows(filtered);
-  }
-
-  toggleBusinessStatus(id) {
-    const list = window.SuperAdminDB.getBusinesses();
-    const target = list.find(b => b.id === id);
-    if (target) {
-      const nxt = target.status === 'Active' ? 'Suspended' : 'Active';
-      window.SuperAdminDB.updateBusinessStatus(id, nxt);
-      this.showToast(`Business "${target.name}" status updated to ${nxt}`, 'success');
-      this.renderBusinessesView();
-    }
-  }
-
-  deleteBusiness(id) {
-    if (confirm('Are you sure you want to delete this business profile?')) {
-      window.SuperAdminDB.deleteBusiness(id);
-      this.showToast('Business deleted successfully.', 'danger');
-      this.renderBusinessesView();
-    }
-  }
-
-  // --- SUBSCRIPTIONS VIEW ---
+  // --- SUBSCRIPTIONS MASTER VIEW ---
   renderSubscriptionsView() {
     const body = document.getElementById('adminContentBody');
     if (!body) return;
@@ -461,47 +438,61 @@ class SuperAdminApp {
     const subs = window.SuperAdminDB.getSubscriptions();
     const businesses = window.SuperAdminDB.getBusinesses();
     const plans = window.SuperAdminDB.getPlans();
+    const licenses = window.SuperAdminDB.getLicenses();
+    const payments = window.SuperAdminDB.getPayments();
 
     body.innerHTML = `
       <div class="card-box">
         <div class="box-header">
-          <div class="box-title">📜 Subscription Lifecycle Manager</div>
+          <div class="box-title">📜 Subscriptions Master Control Panel</div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-admin btn-secondary" onclick="adminApp.exportSubscriptionsCSV()">📥 Export CSV</button>
+          </div>
         </div>
 
+        <!-- SEARCH & MULTI-FILTER TOOLBAR -->
+        <div style="display:flex; flex-direction:column; gap:12px; margin-bottom:16px;">
+          <div class="global-search-bar" style="max-width:100%;">
+            <span>🔍</span>
+            <input type="text" id="subSearchInput" placeholder="Search Business Name, Business ID, Phone, Email, License Key..." onkeyup="adminApp.filterSubscriptionsTable()">
+          </div>
+
+          <div class="filter-toolbar" style="display:flex; flex-wrap:wrap; gap:6px;" id="subFilterContainer">
+            <div class="filter-chip active" onclick="adminApp.setSubFilter('All', this)">All</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Trial', this)">Trial</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Active', this)">Active</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Expired', this)">Expired</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Suspended', this)">Suspended</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Starter', this)">Starter</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Standard', this)">Standard</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Premium', this)">Premium</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Enterprise', this)">Enterprise</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Monthly', this)">Monthly</div>
+            <div class="filter-chip" onclick="adminApp.setSubFilter('Yearly', this)">Yearly</div>
+          </div>
+        </div>
+
+        <!-- DATA TABLE -->
         <div class="table-responsive">
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Subscription ID</th>
                 <th>Business Name</th>
+                <th>Business ID</th>
+                <th>Owner Name & Contact</th>
                 <th>Current Plan</th>
                 <th>Cycle</th>
-                <th>Expires Date</th>
                 <th>Status</th>
+                <th>Activation Date</th>
+                <th>Expiry Date</th>
+                <th>Days Left</th>
+                <th>License Key</th>
+                <th>Payment</th>
                 <th>Actions</th>
               </tr>
             </thead>
-            <tbody>
-              ${subs.map(s => {
-                const biz = businesses.find(b => b.id === s.businessId) || { name: 'Unknown Store' };
-                const plan = plans.find(p => p.id === s.planId) || { name: 'Starter' };
-                return `
-                  <tr>
-                    <td><b style="font-family:monospace;">${s.id}</b></td>
-                    <td><b>${biz.name}</b></td>
-                    <td><span class="status-pill pill-trial">${plan.name}</span></td>
-                    <td>${s.billingCycle}</td>
-                    <td>${new Date(s.expiresAt).toLocaleDateString()}</td>
-                    <td><span class="status-pill pill-${s.status.toLowerCase()}">${s.status}</span></td>
-                    <td>
-                      <div style="display:flex; gap:6px;">
-                        <button class="btn-admin btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="adminApp.extendSubscriptionExpiry('${s.id}')">➕ Extend +30 Days</button>
-                        <button class="btn-admin btn-primary" style="padding:4px 8px; font-size:11px;" onclick="adminApp.upgradeSubscriptionPlan('${s.id}')">⚡ Upgrade Plan</button>
-                      </div>
-                    </td>
-                  </tr>
-                `;
-              }).join('')}
+            <tbody id="subscriptionsTableBody">
+              ${this.renderSubscriptionsRows(subs, businesses, plans, licenses, payments)}
             </tbody>
           </table>
         </div>
@@ -509,29 +500,328 @@ class SuperAdminApp {
     `;
   }
 
-  extendSubscriptionExpiry(subId) {
-    const subs = window.SuperAdminDB.getSubscriptions();
-    const target = subs.find(s => s.id === subId);
-    if (target) {
-      const curExp = new Date(target.expiresAt).getTime();
-      target.expiresAt = new Date(curExp + 30*86400000).toISOString();
-      target.status = 'Active';
-      window.SuperAdminDB.updateSubscription(target);
-      this.showToast('Subscription expiry extended by 30 days!', 'success');
-      this.renderSubscriptionsView();
+  renderSubscriptionsRows(subs, businesses, plans, licenses, payments) {
+    let list = [...subs];
+
+    // Apply Filter
+    if (this.subFilter !== 'All') {
+      const f = this.subFilter.toLowerCase();
+      list = list.filter(s => {
+        const plan = plans.find(p => p.id === s.planId) || {};
+        return (
+          s.status.toLowerCase() === f ||
+          s.billingCycle.toLowerCase() === f ||
+          (plan.name && plan.name.toLowerCase().includes(f))
+        );
+      });
     }
+
+    // Apply Search Query
+    if (this.subSearchQuery) {
+      const q = this.subSearchQuery.toLowerCase();
+      list = list.filter(s => {
+        const biz = businesses.find(b => b.id === s.businessId) || {};
+        const lic = licenses.find(l => l.businessId === s.businessId) || {};
+        return (
+          (biz.name && biz.name.toLowerCase().includes(q)) ||
+          (biz.id && biz.id.toLowerCase().includes(q)) ||
+          (biz.phone && biz.phone.toLowerCase().includes(q)) ||
+          (biz.email && biz.email.toLowerCase().includes(q)) ||
+          (lic.licenseKey && lic.licenseKey.toLowerCase().includes(q))
+        );
+      });
+    }
+
+    if (list.length === 0) {
+      return `<tr><td colspan="12" style="text-align:center; padding:20px; color:var(--admin-text-muted);">No subscription records match criteria.</td></tr>`;
+    }
+
+    const now = new Date();
+
+    return list.map(s => {
+      const biz = businesses.find(b => b.id === s.businessId) || { name: 'Unknown', ownerName: 'N/A', phone: 'N/A', email: 'N/A' };
+      const plan = plans.find(p => p.id === s.planId) || { name: 'Starter POS' };
+      const lic = licenses.find(l => l.businessId === s.businessId) || { licenseKey: 'N/A' };
+      const pay = payments.find(p => p.businessId === s.businessId) || { status: 'Verified' };
+
+      const expDate = new Date(s.expiresAt);
+      const daysLeft = Math.ceil((expDate - now) / 86400000);
+      const daysBadgeColor = daysLeft <= 0 ? 'var(--admin-danger)' : (daysLeft <= 7 ? 'var(--admin-warning)' : 'var(--admin-success)');
+
+      return `
+        <tr>
+          <td><b>${biz.name}</b></td>
+          <td><code style="color:var(--admin-primary);">${s.businessId}</code></td>
+          <td><b>${biz.ownerName}</b><br><span style="font-size:10px; color:var(--admin-text-muted);">${biz.phone}</span></td>
+          <td><span class="status-pill pill-trial">${plan.name}</span></td>
+          <td>${s.billingCycle}</td>
+          <td><span class="status-pill pill-${s.status.toLowerCase()}">${s.status}</span></td>
+          <td style="font-size:11px;">${new Date(s.startDate || s.created_at || now).toLocaleDateString()}</td>
+          <td style="font-size:11px;"><b>${expDate.toLocaleDateString()}</b></td>
+          <td><b style="color:${daysBadgeColor};">${daysLeft <= 0 ? 'Expired' : `${daysLeft} Days`}</b></td>
+          <td><code style="font-size:10px; color:var(--admin-success);">${lic.licenseKey}</code></td>
+          <td><span class="status-pill pill-${pay.status === 'Verified' ? 'active' : 'suspended'}">${pay.status}</span></td>
+          <td>
+            <div style="display:flex; gap:4px; flex-wrap:wrap;">
+              <button class="btn-admin btn-success" style="padding:2px 6px; font-size:10px;" onclick="adminApp.openCustomRenewModal('${s.businessId}')">💳 Renew</button>
+              <button class="btn-admin btn-primary" style="padding:2px 6px; font-size:10px;" onclick="adminApp.openCustomUpgradeModal('${s.businessId}')">⚡ Change Plan</button>
+              <button class="btn-admin btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="adminApp.openCustomSuspendModal('${s.businessId}')">⏸️ Suspend</button>
+              <button class="btn-admin btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="adminApp.activateBusiness('${s.businessId}')">▶️ Activate</button>
+              <button class="btn-admin btn-secondary" style="padding:2px 6px; font-size:10px;" onclick="adminApp.resetTrial('${s.businessId}')">🔄 Reset Trial</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
 
-  upgradeSubscriptionPlan(subId) {
+  setSubFilter(filterVal, chipElem) {
+    this.subFilter = filterVal;
+    document.querySelectorAll('#subFilterContainer .filter-chip').forEach(c => c.classList.remove('active'));
+    if (chipElem) chipElem.classList.add('active');
+    this.filterSubscriptionsTable();
+  }
+
+  filterSubscriptionsTable() {
+    const input = document.getElementById('subSearchInput');
+    if (input) this.subSearchQuery = input.value.trim();
+
+    const body = document.getElementById('subscriptionsTableBody');
+    if (!body) return;
+
     const subs = window.SuperAdminDB.getSubscriptions();
-    const target = subs.find(s => s.id === subId);
-    if (target) {
-      target.planId = 'plan_premium';
-      target.status = 'Active';
-      window.SuperAdminDB.updateSubscription(target);
-      this.showToast('Upgraded subscription to Premium Supermarket Plan!', 'success');
-      this.renderSubscriptionsView();
+    const businesses = window.SuperAdminDB.getBusinesses();
+    const plans = window.SuperAdminDB.getPlans();
+    const licenses = window.SuperAdminDB.getLicenses();
+    const payments = window.SuperAdminDB.getPayments();
+
+    body.innerHTML = this.renderSubscriptionsRows(subs, businesses, plans, licenses, payments);
+  }
+
+  // --- CUSTOM RENEWAL MODAL ---
+  openCustomRenewModal(bizId) {
+    const bizList = window.SuperAdminDB.getBusinesses();
+    const subList = window.SuperAdminDB.getSubscriptions();
+    const planList = window.SuperAdminDB.getPlans();
+
+    const biz = bizList.find(b => b.id === bizId);
+    const sub = subList.find(s => s.businessId === bizId) || {};
+    const plan = planList.find(p => p.id === sub.planId) || planList[0];
+
+    const modal = document.getElementById('adminModalBox');
+    if (!modal || !biz) return;
+
+    const defaultExp = new Date(Date.now() + 365*86400000).toISOString().split('T')[0];
+
+    modal.innerHTML = `
+      <div class="admin-modal-header">
+        <div class="box-title">💳 Renew Subscription: ${biz.name}</div>
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">✕</button>
+      </div>
+
+      <div class="admin-modal-body" style="display:flex; flex-direction:column; gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Billing Cycle</label>
+          <select id="renewCycleSelect" class="form-control" onchange="adminApp.updateRenewPriceTag('${plan.id}')">
+            <option value="Monthly">Monthly Cycle</option>
+            <option value="Yearly" selected>Yearly Cycle (Discounted)</option>
+            <option value="Custom">Custom Expiry & Amount</option>
+          </select>
+        </div>
+
+        <div class="form-row" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label class="form-label">New Expiry Date *</label>
+            <input type="date" id="renewExpiryDate" class="form-control" value="${defaultExp}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Renewal Amount (₹) *</label>
+            <input type="number" id="renewAmount" class="form-control" value="${plan.yearlyPrice || 1999}">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Admin Payment Notes</label>
+          <input type="text" id="renewNotes" class="form-control" placeholder="e.g. Received GPay / Bank NEFT Transfer">
+        </div>
+      </div>
+
+      <div class="admin-modal-footer">
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">Cancel</button>
+        <button class="btn-admin btn-success" onclick="adminApp.submitRenewForm('${bizId}')">✓ Renew Subscription & Notify POS</button>
+      </div>
+    `;
+
+    this.openModal();
+  }
+
+  updateRenewPriceTag(planId) {
+    const cycle = document.getElementById('renewCycleSelect').value;
+    const plans = window.SuperAdminDB.getPlans();
+    const plan = plans.find(p => p.id === planId) || plans[0];
+    const amountInput = document.getElementById('renewAmount');
+    if (!amountInput) return;
+
+    if (cycle === 'Monthly') amountInput.value = plan.monthlyPrice;
+    else if (cycle === 'Yearly') amountInput.value = plan.yearlyPrice;
+  }
+
+  submitRenewForm(bizId) {
+    const cycle = document.getElementById('renewCycleSelect').value;
+    const expiresAtDate = document.getElementById('renewExpiryDate').value;
+    const amount = document.getElementById('renewAmount').value;
+    const notes = document.getElementById('renewNotes').value;
+
+    if (!expiresAtDate) {
+      alert('Expiry Date is required.');
+      return;
     }
+
+    const isoExpiry = new Date(expiresAtDate + 'T23:59:59').toISOString();
+
+    window.SuperAdminDB.renewSubscriptionAtomic({
+      businessId: bizId,
+      cycle,
+      expiresAt: isoExpiry,
+      amount,
+      notes
+    });
+
+    this.closeModal();
+    this.showToast('✅ Subscription Renewed! Realtime update sent to POS.', 'success');
+    this.renderSubscriptionsView();
+  }
+
+  // --- CUSTOM PLAN UPGRADE / CHANGE MODAL ---
+  openCustomUpgradeModal(bizId) {
+    const bizList = window.SuperAdminDB.getBusinesses();
+    const subList = window.SuperAdminDB.getSubscriptions();
+    const planList = window.SuperAdminDB.getPlans();
+
+    const biz = bizList.find(b => b.id === bizId);
+    const sub = subList.find(s => s.businessId === bizId) || {};
+
+    const modal = document.getElementById('adminModalBox');
+    if (!modal || !biz) return;
+
+    modal.innerHTML = `
+      <div class="admin-modal-header">
+        <div class="box-title">⚡ Change Plan: ${biz.name}</div>
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">✕</button>
+      </div>
+
+      <div class="admin-modal-body" style="display:flex; flex-direction:column; gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Select Target Subscription Plan</label>
+          <select id="upgradePlanSelect" class="form-control">
+            ${planList.map(p => `<option value="${p.id}" ${sub.planId === p.id ? 'selected' : ''}>${p.name} (Monthly: ₹${p.monthlyPrice} / Yearly: ₹${p.yearlyPrice}) - Max ${p.deviceLimit} Devices</option>`).join('')}
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Select Billing Cycle</label>
+          <select id="upgradeCycleSelect" class="form-control">
+            <option value="Monthly" ${sub.billingCycle === 'Monthly' ? 'selected' : ''}>Monthly Billing</option>
+            <option value="Yearly" ${sub.billingCycle === 'Yearly' ? 'selected' : ''}>Yearly Billing</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="admin-modal-footer">
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">Cancel</button>
+        <button class="btn-admin btn-primary" onclick="adminApp.submitUpgradeForm('${bizId}')">Update Plan & License Devices</button>
+      </div>
+    `;
+
+    this.openModal();
+  }
+
+  submitUpgradeForm(bizId) {
+    const newPlanId = document.getElementById('upgradePlanSelect').value;
+    const cycle = document.getElementById('upgradeCycleSelect').value;
+
+    window.SuperAdminDB.changePlanAtomic(bizId, newPlanId, cycle);
+
+    this.closeModal();
+    this.showToast('⚡ Plan updated! License device limits synchronized.', 'success');
+    this.renderSubscriptionsView();
+  }
+
+  // --- CUSTOM SUSPENSION MODAL ---
+  openCustomSuspendModal(bizId) {
+    const bizList = window.SuperAdminDB.getBusinesses();
+    const biz = bizList.find(b => b.id === bizId);
+    const modal = document.getElementById('adminModalBox');
+    if (!modal || !biz) return;
+
+    modal.innerHTML = `
+      <div class="admin-modal-header">
+        <div class="box-title">⏸️ Suspend Account: ${biz.name}</div>
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">✕</button>
+      </div>
+
+      <div class="admin-modal-body" style="display:flex; flex-direction:column; gap:12px;">
+        <div style="background:rgba(239,68,68,0.15); border:1px solid var(--admin-danger); padding:10px; border-radius:6px; color:#fca5a5; font-size:12px;">
+          ⚠️ <b>Warning:</b> Suspending this business will immediately lock POS Billing, Inventory, Reports, and Products in real-time.
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Suspension Reason *</label>
+          <input type="text" id="suspendReasonInput" class="form-control" value="Non-Payment / Policy Violation" required>
+        </div>
+      </div>
+
+      <div class="admin-modal-footer">
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">Cancel</button>
+        <button class="btn-admin btn-danger" onclick="adminApp.submitSuspendForm('${bizId}')">Confirm & Lock POS</button>
+      </div>
+    `;
+
+    this.openModal();
+  }
+
+  submitSuspendForm(bizId) {
+    const reason = document.getElementById('suspendReasonInput').value.trim();
+    window.SuperAdminDB.suspendBusinessAtomic(bizId, reason);
+    this.closeModal();
+    this.showToast('🔴 Account Suspended & POS locked in real-time.', 'danger');
+    if (this.currentRoute === '#/subscriptions') this.renderSubscriptionsView();
+    else if (this.currentRoute === '#/businesses') this.renderBusinessesView();
+  }
+
+  activateBusiness(bizId) {
+    window.SuperAdminDB.activateBusinessAtomic(bizId);
+    this.showToast('🟢 Account Activated & POS unlocked in real-time.', 'success');
+    if (this.currentRoute === '#/subscriptions') this.renderSubscriptionsView();
+    else if (this.currentRoute === '#/businesses') this.renderBusinessesView();
+  }
+
+  resetTrial(bizId) {
+    window.SuperAdminDB.resetTrialAtomic(bizId, 14);
+    this.showToast('🔄 14-Day Free Trial reset for business!', 'success');
+    if (this.currentRoute === '#/subscriptions') this.renderSubscriptionsView();
+  }
+
+  exportSubscriptionsCSV() {
+    const subs = window.SuperAdminDB.getSubscriptions();
+    const bizs = window.SuperAdminDB.getBusinesses();
+    const plans = window.SuperAdminDB.getPlans();
+    const lics = window.SuperAdminDB.getLicenses();
+
+    let csv = 'Business Name,Business ID,Plan,Cycle,Status,Expiry Date,License Key\n';
+    subs.forEach(s => {
+      const biz = bizs.find(b => b.id === s.businessId) || {};
+      const plan = plans.find(p => p.id === s.planId) || {};
+      const lic = lics.find(l => l.businessId === s.businessId) || {};
+      csv += `"${biz.name || ''}","${s.businessId}","${plan.name || ''}","${s.billingCycle}","${s.status}","${s.expiresAt}","${lic.licenseKey || ''}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `Subscriptions_Master_${Date.now()}.csv`;
+    a.click();
+    this.showToast('Subscriptions Master report exported to CSV!', 'success');
   }
 
   // --- PLANS VIEW ---
@@ -544,7 +834,7 @@ class SuperAdminApp {
     body.innerHTML = `
       <div class="card-box">
         <div class="box-header">
-          <div class="box-title">💎 Subscription Plan Catalog</div>
+          <div class="box-title">💎 Subscription Plan Catalog & Matrix</div>
           <button class="btn-admin btn-primary" onclick="adminApp.openCreatePlanModal()">+ Create New Plan</button>
         </div>
 
@@ -590,7 +880,6 @@ class SuperAdminApp {
       <div class="card-box">
         <div class="box-header">
           <div class="box-title">💳 Payment Verifications & Queue</div>
-          <button class="btn-admin btn-secondary" onclick="adminApp.exportPaymentsCSV()">📥 Export CSV</button>
         </div>
 
         <div class="table-responsive">
@@ -623,7 +912,7 @@ class SuperAdminApp {
                         <button class="btn-admin btn-success" style="padding:4px 8px; font-size:11px;" onclick="adminApp.verifyPayment('${p.id}', 'Verified')">✓ Verify</button>
                         <button class="btn-admin btn-danger" style="padding:4px 8px; font-size:11px;" onclick="adminApp.verifyPayment('${p.id}', 'Rejected')">✕ Reject</button>
                       ` : `
-                        <button class="btn-admin btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="adminApp.downloadInvoice('${p.id}')">📄 Invoice</button>
+                        <button class="btn-admin btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="alert('Invoice: ${p.invoiceNo}\\nAmount: ₹${p.amount}')">📄 Invoice</button>
                       `}
                     </td>
                   </tr>
@@ -642,29 +931,6 @@ class SuperAdminApp {
     this.renderPaymentsView();
   }
 
-  downloadInvoice(paymentId) {
-    const payments = window.SuperAdminDB.getPayments();
-    const target = payments.find(p => p.id === paymentId);
-    if (target) {
-      alert(`Invoice ${target.invoiceNo} generated!\nAmount: ₹${target.amount}\nUTR: ${target.utrRef}`);
-    }
-  }
-
-  exportPaymentsCSV() {
-    const payments = window.SuperAdminDB.getPayments();
-    let csv = 'Invoice No,Business ID,Amount,Payment Method,UTR Ref,Status,Created At\n';
-    payments.forEach(p => {
-      csv += `"${p.invoiceNo}","${p.businessId}","${p.amount}","${p.paymentMethod}","${p.utrRef}","${p.status}","${p.createdAt}"\n`;
-    });
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Payment_Collections_${Date.now()}.csv`;
-    a.click();
-    this.showToast('Payments Report exported to CSV!', 'success');
-  }
-
   // --- LICENSES VIEW ---
   renderLicensesView() {
     const body = document.getElementById('adminContentBody');
@@ -676,7 +942,7 @@ class SuperAdminApp {
     body.innerHTML = `
       <div class="card-box">
         <div class="box-header">
-          <div class="box-title">🔑 License Keys & Device Limits</div>
+          <div class="box-title">🔑 License Keys & Devices</div>
           <button class="btn-admin btn-primary" onclick="adminApp.openGenerateLicenseModal()">+ Issue New License</button>
         </div>
 
@@ -714,7 +980,6 @@ class SuperAdminApp {
   openGenerateLicenseModal() {
     const bizList = window.SuperAdminDB.getBusinesses();
     const selectOptions = bizList.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
-
     const modal = document.getElementById('adminModalBox');
     if (!modal) return;
 
@@ -738,13 +1003,12 @@ class SuperAdminApp {
         <button class="btn-admin btn-primary" onclick="adminApp.generateLicenseKeySubmit()">Generate License</button>
       </div>
     `;
-    document.getElementById('adminModalOverlay').classList.add('active');
+    this.openModal();
   }
 
   generateLicenseKeySubmit() {
     const bizId = document.getElementById('licBizId').value;
     const maxDev = document.getElementById('licMaxDevices').value;
-
     const newLic = window.SuperAdminDB.generateLicenseKey(bizId, maxDev);
     this.closeModal();
     this.showToast(`New License Issued: ${newLic.licenseKey}`, 'success');
@@ -758,10 +1022,7 @@ class SuperAdminApp {
 
     body.innerHTML = `
       <div class="card-box">
-        <div class="box-header">
-          <div class="box-title">📈 Revenue Analytics & System Performance</div>
-        </div>
-
+        <div class="box-header"><div class="box-title">📈 Revenue Analytics & Performance</div></div>
         <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
           <div style="background:var(--admin-card-hover); padding:16px; border-radius:var(--admin-radius-md); border:1px solid var(--admin-border);">
             <div style="font-size:12px; color:var(--admin-text-sub);">ANNUAL REVENUE RUN RATE (ARR)</div>
@@ -787,16 +1048,14 @@ class SuperAdminApp {
 
     body.innerHTML = `
       <div class="card-box">
-        <div class="box-header">
-          <div class="box-title">🔔 Business Notification Broadcast</div>
+        <div class="box-header"><div class="box-title">🔔 Notification Broadcast</div></div>
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" id="notifTitle" class="form-control" placeholder="e.g. Scheduled Maintenance">
         </div>
         <div class="form-group">
-          <label class="form-label">Broadcast Message Title</label>
-          <input type="text" id="notifTitle" class="form-control" placeholder="e.g. System Maintenance Notice">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Broadcast Content</label>
-          <textarea id="notifMsg" class="form-control" style="height:100px;" placeholder="Message to all business clients..."></textarea>
+          <label class="form-label">Message</label>
+          <textarea id="notifMsg" class="form-control" style="height:80px;" placeholder="Message to clients..."></textarea>
         </div>
         <button class="btn-admin btn-primary" style="width:fit-content;" onclick="adminApp.sendNotificationSubmit()">Broadcast Notification</button>
       </div>
@@ -805,17 +1064,9 @@ class SuperAdminApp {
 
   sendNotificationSubmit() {
     const title = document.getElementById('notifTitle').value;
-    if (!title) {
-      alert('Please enter notification title.');
-      return;
-    }
-    window.SuperAdminDB.recordAuditLog({
-      action: 'NOTIFICATION_BROADCAST',
-      targetBusiness: 'ALL_CLIENTS',
-      oldValue: 'None',
-      newValue: title
-    });
-    this.showToast(`Broadcast Message Sent: "${title}"`, 'success');
+    if (!title) { alert('Enter title'); return; }
+    window.SuperAdminDB.recordAuditLog({ action: 'NOTIFICATION_BROADCAST', targetBusiness: 'ALL', oldValue: 'None', newValue: title });
+    this.showToast(`Broadcast Sent: "${title}"`, 'success');
     document.getElementById('notifTitle').value = '';
     document.getElementById('notifMsg').value = '';
   }
@@ -829,10 +1080,7 @@ class SuperAdminApp {
 
     body.innerHTML = `
       <div class="card-box">
-        <div class="box-header">
-          <div class="box-title">🛡️ Immutable Security Audit Logs</div>
-        </div>
-
+        <div class="box-header"><div class="box-title">🛡️ Security Audit Logs</div></div>
         <div class="table-responsive">
           <table class="admin-table">
             <thead>
@@ -874,20 +1122,15 @@ class SuperAdminApp {
 
     body.innerHTML = `
       <div class="card-box" style="max-width:650px;">
-        <div class="box-header">
-          <div class="box-title">⚙️ Super Admin & Supabase Configuration</div>
-        </div>
-
+        <div class="box-header"><div class="box-title">⚙️ Super Admin & Supabase Config</div></div>
         <div class="form-group">
-          <label class="form-label">Supabase API URL</label>
+          <label class="form-label">Supabase URL</label>
           <input type="text" id="setSupaUrl" class="form-control" value="${config.url}">
         </div>
-
         <div class="form-group">
-          <label class="form-label">Supabase Anon Key / Service Role JWT</label>
+          <label class="form-label">Supabase Anon Key</label>
           <input type="text" id="setSupaKey" class="form-control" value="${config.anonKey}">
         </div>
-
         <button class="btn-admin btn-success" style="margin-top:10px;" onclick="adminApp.saveSettingsSubmit()">💾 Save Supabase Configuration</button>
       </div>
     `;
@@ -896,12 +1139,130 @@ class SuperAdminApp {
   saveSettingsSubmit() {
     const url = document.getElementById('setSupaUrl').value.trim();
     const anonKey = document.getElementById('setSupaKey').value.trim();
-
     localStorage.setItem('super_admin_supabase_config', JSON.stringify({ url, anonKey }));
     this.showToast('Supabase API Configuration Saved Successfully', 'success');
   }
 
   // --- GLOBAL UTILITIES ---
+  openCreateBusinessModal() {
+    const modal = document.getElementById('adminModalBox');
+    if (!modal) return;
+
+    modal.innerHTML = `
+      <div class="admin-modal-header">
+        <div class="box-title">🏢 Register New POS Business</div>
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">✕</button>
+      </div>
+      <div class="admin-modal-body">
+        <div class="form-group">
+          <label class="form-label">Business Name *</label>
+          <input type="text" id="newBizName" class="form-control" placeholder="e.g. Apex Hypermarket" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Owner Name *</label>
+          <input type="text" id="newOwnerName" class="form-control" placeholder="e.g. Rajesh Kumar" required>
+        </div>
+        <div class="form-row" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label class="form-label">Email *</label>
+            <input type="email" id="newBizEmail" class="form-control" placeholder="apex@pos.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone *</label>
+            <input type="tel" id="newBizPhone" class="form-control" placeholder="+91 9876543210">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input type="text" id="newBizCity" class="form-control" placeholder="Mumbai">
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">Cancel</button>
+        <button class="btn-admin btn-primary" onclick="adminApp.saveNewBusinessSubmit()">Create Business</button>
+      </div>
+    `;
+    this.openModal();
+  }
+
+  saveNewBusinessSubmit() {
+    const name = document.getElementById('newBizName').value.trim();
+    const ownerName = document.getElementById('newOwnerName').value.trim();
+    const email = document.getElementById('newBizEmail').value.trim();
+    const phone = document.getElementById('newBizPhone').value.trim();
+    const city = document.getElementById('newBizCity').value.trim();
+
+    if (!name || !ownerName) {
+      alert('Business Name and Owner Name are required.');
+      return;
+    }
+
+    const newBiz = window.SuperAdminDB.saveBusiness({
+      name, ownerName, email, phone, city, status: 'Trial'
+    });
+
+    window.SuperAdminDB.generateLicenseKey(newBiz.id, 3);
+    this.closeModal();
+    this.showToast(`Business "${name}" created with 14-day trial & license key!`, 'success');
+    this.renderBusinessesView();
+  }
+
+  openCreatePlanModal() {
+    const modal = document.getElementById('adminModalBox');
+    if (!modal) return;
+
+    modal.innerHTML = `
+      <div class="admin-modal-header">
+        <div class="box-title">💎 Create Subscription Plan</div>
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">✕</button>
+      </div>
+      <div class="admin-modal-body">
+        <div class="form-group">
+          <label class="form-label">Plan Name *</label>
+          <input type="text" id="newPlanName" class="form-control" placeholder="e.g. Ultra Retail" required>
+        </div>
+        <div class="form-row" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+          <div class="form-group">
+            <label class="form-label">Monthly Price (₹) *</label>
+            <input type="number" id="newPlanMonthly" class="form-control" placeholder="199" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Yearly Price (₹) *</label>
+            <input type="number" id="newPlanYearly" class="form-control" placeholder="1999" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Device Limit</label>
+          <input type="number" id="newPlanDeviceLimit" class="form-control" value="5" min="1">
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button class="btn-admin btn-secondary" onclick="adminApp.closeModal()">Cancel</button>
+        <button class="btn-admin btn-primary" onclick="adminApp.saveNewPlanSubmit()">Save Plan</button>
+      </div>
+    `;
+    this.openModal();
+  }
+
+  saveNewPlanSubmit() {
+    const name = document.getElementById('newPlanName').value.trim();
+    const monthlyPrice = parseFloat(document.getElementById('newPlanMonthly').value) || 99;
+    const yearlyPrice = parseFloat(document.getElementById('newPlanYearly').value) || 999;
+    const deviceLimit = parseInt(document.getElementById('newPlanDeviceLimit').value) || 3;
+
+    if (!name) { alert('Plan name required.'); return; }
+
+    window.SuperAdminDB.savePlan({
+      name, monthlyPrice, yearlyPrice, deviceLimit, trialDays: 14,
+      features: [`${deviceLimit} Devices Allowed`, 'Offline Billing', 'Thermal Receipt', 'GST Reports'],
+      active: true
+    });
+
+    this.closeModal();
+    this.showToast(`Plan "${name}" created successfully!`, 'success');
+    this.renderPlansView();
+  }
+
   openModal() {
     document.getElementById('adminModalOverlay').classList.add('active');
   }
@@ -919,13 +1280,11 @@ class SuperAdminApp {
     toast.textContent = msg;
     container.appendChild(toast);
 
-    setTimeout(() => {
-      toast.remove();
-    }, 3500);
+    setTimeout(() => { toast.remove(); }, 3500);
   }
 }
 
-// Instantiate Admin App Controller
+// Instantiate App
 window.adminApp = new SuperAdminApp();
 document.addEventListener('DOMContentLoaded', () => {
   window.adminApp.init();
